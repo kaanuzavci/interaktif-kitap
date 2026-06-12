@@ -71,21 +71,20 @@ function Book() {
   const CurrentPageComponent = pages[currentPage]
 
   return (
-    /* DIŞ KAPSAYICI: ekranı doldurur, sahneyi ortalar.
-       Ekran 16:9 değilse kenarlarda koyu şerit (letterbox) kalır. */
-    <div className="flex h-full w-full items-center justify-center bg-gece">
-      {/* ----- SAHNE (16:9) -----
-          Arka plan görsellerimiz 16:9 oranında çizildi. Sahneyi de
-          sabit 16:9 yapıyoruz ki içindeki TÜM yüzde koordinatlar
-          (Işıl'ın rotası, çiçek katmanı...) her ekranda resimle
-          birebir hizalansın. bg-cover kullansaydık resim her ekran
-          oranında farklı kırpılır, koordinatlar kayardı.
-          min(): sahne ekrana sığabilen en büyük 16:9 dikdörtgen olur. */}
+    /* DIŞ KAPSAYICI: ekranın tamamı. Sahne taşan kısmı gizlenir. */
+    <div className="relative h-full w-full overflow-hidden bg-gece">
+      {/* ----- SAHNE (16:9, "kapla" modu) -----
+          Arka plan görsellerimiz 16:9 oranında çizildi. Sahne sabit
+          16:9 kalıyor ki içindeki TÜM yüzde koordinatlar (Işıl'ın
+          rotası vb.) her ekranda resimle birebir hizalansın.
+          max(): sahne, ekranı TAMAMEN kaplayan en küçük 16:9
+          dikdörtgen olur. Ekran tam 16:9 değilse kenarlardan birazı
+          taşar ve kırpılır - ama boş şerit hiç kalmaz. */}
       <div
-        className="relative overflow-hidden"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
         style={{
-          width: 'min(100vw, calc(100vh * 16 / 9))',
-          height: 'min(100vh, calc(100vw * 9 / 16))',
+          width: 'max(100vw, calc(100vh * 16 / 9))',
+          height: 'max(100vh, calc(100vw * 9 / 16))',
         }}
       >
         {/* ----- AKTİF SAYFA (fade efektli katman) -----
@@ -98,26 +97,28 @@ function Book() {
         >
           <CurrentPageComponent />
         </div>
-
-        {/* ----- SABİT UI KATMANI (her sayfada aynı) ----- */}
-
-        {/* Ses aç/kapat - sol üst köşe */}
-        <SoundToggle soundOn={soundOn} onToggle={toggleSound} />
-
-        {/* Geri oku - sol kenar (ilk sayfadaysak gizlenir) */}
-        <NavArrow
-          direction="prev"
-          onClick={prevPage}
-          hidden={currentPage === 0}
-        />
-
-        {/* İleri oku - sağ kenar (son sayfadaysak gizlenir) */}
-        <NavArrow
-          direction="next"
-          onClick={nextPage}
-          hidden={currentPage === pages.length - 1}
-        />
       </div>
+
+      {/* ----- SABİT UI KATMANI (her sayfada aynı) -----
+          Sahnenin DIŞINDA duruyorlar: sahne kenarlardan kırpılsa
+          bile butonlar her zaman ekranın içinde kalır. */}
+
+      {/* Ses aç/kapat - sol üst köşe */}
+      <SoundToggle soundOn={soundOn} onToggle={toggleSound} />
+
+      {/* Geri oku - sol kenar (ilk sayfadaysak gizlenir) */}
+      <NavArrow
+        direction="prev"
+        onClick={prevPage}
+        hidden={currentPage === 0}
+      />
+
+      {/* İleri oku - sağ kenar (son sayfadaysak gizlenir) */}
+      <NavArrow
+        direction="next"
+        onClick={nextPage}
+        hidden={currentPage === pages.length - 1}
+      />
     </div>
   )
 }

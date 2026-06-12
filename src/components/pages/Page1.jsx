@@ -21,10 +21,10 @@ import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
    İNCE AYAR: Işıl yola tam basmıyorsa SADECE bu sayılarla oyna.
 ---------------------------------------------------------------- */
 const YURUYUS_ROTASI = [
-  { left: '25%', bottom: '12%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
-  { left: '33%', bottom: '10%' },   // 1: yol hafifçe iniyor
-  { left: '41%', bottom: '9%' },    // 2: yolun en alçak kısmı
-  { left: '49.5%', bottom: '9.5%' },// 3: varış - sağ kenar sağ sınırda (~%60)
+  { left: '29%', bottom: '10%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
+  { left: '36%', bottom: '8.7%' },   // 1: yol hafifçe iniyor
+  { left: '41%', bottom: '9.5%' },    // 2: yolun en alçak kısmı
+  { left: '49%', bottom: '10.5%' },// 3: varış - sağ kenar sağ sınırda (~%60)
 ]
 
 /* Yürüme hızı: saniyede kaç "sahne yüzdesi" yol alsın.
@@ -95,19 +95,14 @@ function Page1() {
         draggable={false}
       />
 
-      {/* ================= DEKOR: UÇUŞAN KALPLER ================= */}
-      <div className="animate-kalp absolute left-[28%] top-[30%] text-3xl md:text-4xl">💗</div>
-      <div className="animate-kalp absolute right-[30%] top-[22%] text-2xl md:text-3xl" style={{ animationDelay: '0.8s' }}>💖</div>
-      <div className="animate-kalp absolute left-[55%] top-[40%] text-xl md:text-2xl" style={{ animationDelay: '1.6s' }}>💕</div>
-
       {/* ================= IŞIL (z-10) =================
           Konumu hedefIndex'teki duraktan geliyor; durak değişince CSS
           transition onu oraya, mesafeye göre hesaplanan sürede taşıyor.
-          width %10.5 = sahne genişliğinin yüzdesi (sahne büyüyünce o da büyür). */}
+          width = Işıl'ın boyutu (sahne genişliğinin yüzdesi). */}
       <div
         className="absolute z-10"
         style={{
-          width: '10.5%',
+          width: '13.5%',
           left: YURUYUS_ROTASI[hedefIndex].left,
           bottom: YURUYUS_ROTASI[hedefIndex].bottom,
           transition:
