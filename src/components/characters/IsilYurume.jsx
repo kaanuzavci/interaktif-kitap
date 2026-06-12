@@ -20,11 +20,21 @@ const frameModulleri = import.meta.glob(
   { eager: true, import: 'default' },
 )
 
-// Objeyi sıralı bir diziye çevir: [url01, url02, ...]
+/* GEÇİCİ AYAR - POZ_ATLAMA:
+   Elimizdeki 40 dosyada her poz 5 kez tekrarlanıyor (01-05 aynı,
+   06-10 aynı...). Hepsini oynatsak her poz ekranda 5x80=400ms kalır
+   ve yürüyüş kesik kesik görünürdü. Bu yüzden 5'te 1 dosya alıyoruz
+   -> 8 benzersiz poz, her biri 80ms.
+   Gerçek 40 farklı pozlu export gelince bu değeri 1 yap, bitti. */
+const POZ_ATLAMA = 5
+
+// Objeyi sıralı bir diziye çevir: [url01, url06, url11, ...]
 // Dosya adlarındaki numaralar 01, 02 ... şeklinde sıfır dolgulu olduğu
 // için alfabetik sıralama (sort) aynı zamanda sayısal sıralamadır.
+// filter ile her POZ_ATLAMA dosyadan sadece ilkini alıyoruz.
 const frames = Object.keys(frameModulleri)
   .sort()
+  .filter((_, sira) => sira % POZ_ATLAMA === 0)
   .map((dosyaYolu) => frameModulleri[dosyaYolu])
 
 // Saniyede ~12 kare (çizgi film hızı) -> her kare 80ms görünür
