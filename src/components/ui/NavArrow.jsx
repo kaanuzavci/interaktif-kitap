@@ -19,7 +19,7 @@ function NavArrow({ direction, onClick, hidden = false }) {
       onClick={onClick}
       aria-label={isNext ? 'Sonraki sayfa' : 'Önceki sayfa'}
       className={`
-        fixed top-1/2 z-40 -translate-y-1/2
+        absolute top-1/2 z-40 -translate-y-1/2
         ${isNext ? 'right-3 md:right-5' : 'left-3 md:left-5'}
         flex h-16 w-16 items-center justify-center rounded-full
         md:h-20 md:w-20

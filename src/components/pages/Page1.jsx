@@ -4,40 +4,60 @@ import IsilYurume from '../characters/IsilYurume.jsx'
 // Arka plan resmi: import edince Vite bize dosyanın url'ini verir.
 import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
 
+// Ön plan çiçek katmanı: arka plandan kesilmiş saydam PNG
+// (scripts/cikar-on-cicekler.ps1 üretiyor). Işıl'ın ÖNÜNE konunca
+// "çiçeklerin arkasından yürüme" efekti oluşuyor.
+import onCicekler from '../../assets/backgrounds/sahne1-on-cicekler.png'
+
 /* ---------------------------------------------------------------
    YÜRÜYÜŞ ROTASI (waypoint sistemi)
 
-   Yol düz olmadığı için Işıl tek hamlede değil, ara duraklardan
-   (waypoint) geçerek yürüyor. Her durak = yolun üzerinde bir nokta.
-   - left   : soldan uzaklık (ekran genişliğinin yüzdesi)
-   - bottom : alttan uzaklık (ekran yüksekliğinin yüzdesi)
+   Işıl ara duraklardan (waypoint) geçerek yürüyor; yolun inişine
+   uyması için her durakta hem left hem bottom değişebiliyor.
+   - left   : soldan uzaklık (sahne genişliğinin yüzdesi)
+   - bottom : alttan uzaklık (sahne yüksekliğinin yüzdesi)
 
    İNCE AYAR: Işıl yola tam basmıyorsa SADECE bu sayılarla oyna.
-   İlk eleman başlangıç noktası, son eleman Canım'ın yanı.
-   Araya istediğin kadar durak ekleyebilirsin; kod gerisini halleder.
 ---------------------------------------------------------------- */
 const YURUYUS_ROTASI = [
-  { left: '28%', bottom: '14%' }, // 0: başlangıç - yolun sol kısmı
-  { left: '40%', bottom: '10%' }, // 1: yol hafifçe aşağı iniyor
-  { left: '52%', bottom: '8%' },  // 2: yolun en alçak noktası
-  { left: '61%', bottom: '9%' },  // 3: varış - Canım'ın yanı
+  { left: '1%', bottom: '19%' },  // 0: yolun EN BAŞI (çiçeklerin arkası)
+  { left: '14%', bottom: '16%' }, // 1: lale kümesinden çıkış
+  { left: '28%', bottom: '14%' }, // 2: yol alçalmaya devam ediyor
+  { left: '40%', bottom: '10%' }, // 3: iniş
+  { left: '52%', bottom: '8%' },  // 4: yolun en alçak noktası
+  { left: '61%', bottom: '9%' },  // 5: varış - Canım'ın yanı
 ]
 
-// İki durak arası yürüyüş süresi (saniye)
-const SEGMENT_SURESI = 1.7
+/* Yürüme hızı: saniyede kaç "sahne yüzdesi" yol alsın.
+   Küçültmek = yavaşlatmak. Süreyi her durak arası mesafeden
+   hesapladığımız için hız, rotanın her yerinde sabit kalıyor
+   (eskiden her segment eşit süreydi; kısa segmentte yavaş,
+   uzunda hızlı yürüyordu). */
+const HIZ = 6
+
+// İki durak arası yürüyüş süresi (saniye). Mesafeyi Pisagor'la
+// buluyoruz; bottom yüzdeleri yatayla aynı ölçeğe getirmek için
+// 9/16 ile çarpıyoruz (sahne 16:9 - dikey %1, yatay %1'den kısadır).
+function segmentSuresi(hedefIndex) {
+  const onceki = YURUYUS_ROTASI[hedefIndex - 1]
+  const hedef = YURUYUS_ROTASI[hedefIndex]
+  const dx = parseFloat(hedef.left) - parseFloat(onceki.left)
+  const dy = (parseFloat(hedef.bottom) - parseFloat(onceki.bottom)) * (9 / 16)
+  return Math.hypot(dx, dy) / HIZ
+}
 
 /**
  * Page1: Kitabın ilk sayfası - "Sevgi" bölümünün açılış sahnesi.
  *
- * ETKİLEŞİM: Canım'a (çiçeğe) dokununca Işıl, YURUYUS_ROTASI'ndaki
- * durakları sırayla takip ederek çiçeğin yanına yürür.
+ * KATMAN SIRASI (z-index, alttan üste):
+ *   arka plan (resim) < Işıl (z-10) < ön çiçekler (z-20) < Canım/metin (z-30)
+ *   Işıl çiçek katmanının altında olduğu için yolun başında
+ *   çiçeklerin arkasında, ama arka plandaki çimenlerin önünde görünür.
  *
- * Nasıl çalışıyor?
- *  - "hedefIndex" Işıl'ın şu an HANGİ durağa doğru gittiğini tutar.
- *  - Durak değişince CSS transition, left ve bottom değerlerini
- *    yavaşça kaydırır (hem yatay hem dikey -> eğimli yürüyüş).
- *  - Kayma bitince tarayıcı onTransitionEnd olayını tetikler;
- *    biz de sıradaki durağa geçeriz. Duraklar bitince animasyon durur.
+ * ETKİLEŞİM: Canım'a dokununca Işıl rotayı takip ederek yanına yürür.
+ *  - "hedefIndex": şu an hangi durağa doğru gidiyor
+ *  - CSS transition left/bottom'ı yavaşça kaydırır (eğimli yürüyüş)
+ *  - onTransitionEnd: durağa varınca sıradakine geç / rotayı bitir
  */
 function Page1() {
   // Işıl'ın yöneldiği durağın sırası (0 = başlangıç noktasında duruyor)
@@ -67,40 +87,57 @@ function Page1() {
   }
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden bg-cover bg-center"
-      style={{ backgroundImage: `url(${sahne1Arkaplan})` }}
-    >
+    <div className="relative h-full w-full overflow-hidden">
+      {/* ================= ARKA PLAN =================
+          Sahne de resim de 16:9 olduğu için resim sahneyi
+          birebir doldurur, hiçbir yeri kırpılmaz. */}
+      <img
+        src={sahne1Arkaplan}
+        alt=""
+        className="absolute inset-0 h-full w-full"
+        draggable={false}
+      />
+
       {/* ================= DEKOR: UÇUŞAN KALPLER ================= */}
       <div className="animate-kalp absolute left-[28%] top-[30%] text-3xl md:text-4xl">💗</div>
       <div className="animate-kalp absolute right-[30%] top-[22%] text-2xl md:text-3xl" style={{ animationDelay: '0.8s' }}>💖</div>
       <div className="animate-kalp absolute left-[55%] top-[40%] text-xl md:text-2xl" style={{ animationDelay: '1.6s' }}>💕</div>
 
-      {/* ================= KARAKTERLER ================= */}
-
-      {/* IŞIL - konumu (left/bottom) hedefIndex'teki duraktan geliyor.
-          Durak değişince CSS transition karakteri oraya yavaşça taşıyor. */}
+      {/* ================= IŞIL (z-10: çiçek katmanının ALTINDA) =================
+          Konumu hedefIndex'teki duraktan geliyor; durak değişince CSS
+          transition onu oraya, mesafeye göre hesaplanan sürede taşıyor.
+          width %9.5 = sahne genişliğinin yüzdesi (sahne büyüyünce o da büyür). */}
       <div
         className="absolute z-10"
         style={{
+          width: '9.5%',
           left: YURUYUS_ROTASI[hedefIndex].left,
           bottom: YURUYUS_ROTASI[hedefIndex].bottom,
-          transition: `left ${SEGMENT_SURESI}s linear, bottom ${SEGMENT_SURESI}s linear`,
+          transition:
+            hedefIndex === 0
+              ? 'none'
+              : `left ${segmentSuresi(hedefIndex)}s linear, bottom ${segmentSuresi(hedefIndex)}s linear`,
         }}
         onTransitionEnd={duragaVardi}
       >
-        <IsilYurume
-          isPlaying={yuruyor}
-          width="clamp(110px, 11.5vw, 220px)"
-        />
+        <IsilYurume isPlaying={yuruyor} width="100%" />
       </div>
 
-      {/* CANIM (konuşan çiçek) - dokununca Işıl'ı çağırır.
-          Görseli henüz placeholder; hazır olunca sprite'a dönüşecek. */}
+      {/* ================= ÖN ÇİÇEK KATMANI (z-20: Işıl'ın ÖNÜNDE) =================
+          Arka planla piksel piksel aynı olduğu için göze görünmez;
+          tek görevi Işıl'ı arkasında bırakmak. */}
+      <img
+        src={onCicekler}
+        alt=""
+        className="pointer-events-none absolute bottom-0 left-0 z-20 w-[37%]"
+        draggable={false}
+      />
+
+      {/* ================= CANIM (z-30) - dokununca Işıl'ı çağırır ================= */}
       <button
         onClick={canimaTiklandi}
         aria-label="Canım'a dokun"
-        className="animate-sallan absolute bottom-[10%] right-[24%] flex cursor-pointer flex-col items-center"
+        className="animate-sallan absolute bottom-[10%] right-[24%] z-30 flex cursor-pointer flex-col items-center"
         style={{ animationDelay: '1.2s' }}
       >
         {/* Dokunma daveti - Işıl yola çıkınca kaybolur */}
@@ -117,16 +154,16 @@ function Page1() {
         </span>
       </button>
 
-      {/* ================= METİNLER ================= */}
+      {/* ================= METİNLER (z-30) ================= */}
 
       {/* Bölüm başlığı - üst orta */}
-      <h1 className="absolute left-1/2 top-[5%] -translate-x-1/2 font-baslik text-3xl font-extrabold text-gece drop-shadow-[2px_3px_0_rgba(255,255,255,0.9)] md:text-5xl">
+      <h1 className="absolute left-1/2 top-[5%] z-30 -translate-x-1/2 font-baslik text-3xl font-extrabold text-gece drop-shadow-[2px_3px_0_rgba(255,255,255,0.9)] md:text-5xl">
         Sevgi 💝
       </h1>
 
-      {/* Hikaye cümlesi - GEÇİCİ olarak başlığın altına alındı
+      {/* Hikaye cümlesi - GEÇİCİ olarak başlığın altında
           (yol ve yürüyüş rahat görülebilsin diye; yeri sonra netleşecek) */}
-      <p className="absolute left-1/2 top-[15%] w-[60%] max-w-xl -translate-x-1/2 rounded-3xl border-4 border-seker/40 bg-white/90 px-6 py-3 text-center font-metin text-base font-semibold text-gece shadow-lg backdrop-blur-sm md:text-xl">
+      <p className="absolute left-1/2 top-[15%] z-30 w-[60%] max-w-xl -translate-x-1/2 rounded-3xl border-4 border-seker/40 bg-white/90 px-6 py-3 text-center font-metin text-base font-semibold text-gece shadow-lg backdrop-blur-sm md:text-xl">
         Işıl, bahçesindeki konuşan çiçeği Canım&apos;la her sabah selamlaşırdı.
       </p>
     </div>

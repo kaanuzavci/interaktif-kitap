@@ -14,7 +14,7 @@ function SoundToggle({ soundOn, onToggle }) {
       onClick={onToggle}
       aria-label={soundOn ? 'Sesi kapat' : 'Sesi aç'}
       className={`
-        fixed left-3 top-3 z-40 md:left-5 md:top-5
+        absolute left-3 top-3 z-40 md:left-5 md:top-5
         flex h-14 w-14 items-center justify-center rounded-full
         md:h-16 md:w-16
         border-4 border-white text-white

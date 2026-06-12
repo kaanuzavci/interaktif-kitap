@@ -71,36 +71,53 @@ function Book() {
   const CurrentPageComponent = pages[currentPage]
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      {/* ----- AKTİF SAYFA (fade efektli katman) -----
-          opacity, isVisible state'ine göre değişir;
-          transition-opacity sayesinde geçiş yumuşak olur. */}
+    /* DIŞ KAPSAYICI: ekranı doldurur, sahneyi ortalar.
+       Ekran 16:9 değilse kenarlarda koyu şerit (letterbox) kalır. */
+    <div className="flex h-full w-full items-center justify-center bg-gece">
+      {/* ----- SAHNE (16:9) -----
+          Arka plan görsellerimiz 16:9 oranında çizildi. Sahneyi de
+          sabit 16:9 yapıyoruz ki içindeki TÜM yüzde koordinatlar
+          (Işıl'ın rotası, çiçek katmanı...) her ekranda resimle
+          birebir hizalansın. bg-cover kullansaydık resim her ekran
+          oranında farklı kırpılır, koordinatlar kayardı.
+          min(): sahne ekrana sığabilen en büyük 16:9 dikdörtgen olur. */}
       <div
-        className={`h-full w-full transition-opacity duration-[var(--fade-sure)] ease-in-out ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className="relative overflow-hidden"
+        style={{
+          width: 'min(100vw, calc(100vh * 16 / 9))',
+          height: 'min(100vh, calc(100vw * 9 / 16))',
+        }}
       >
-        <CurrentPageComponent />
+        {/* ----- AKTİF SAYFA (fade efektli katman) -----
+            opacity, isVisible state'ine göre değişir;
+            transition-opacity sayesinde geçiş yumuşak olur. */}
+        <div
+          className={`h-full w-full transition-opacity duration-[var(--fade-sure)] ease-in-out ${
+            isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <CurrentPageComponent />
+        </div>
+
+        {/* ----- SABİT UI KATMANI (her sayfada aynı) ----- */}
+
+        {/* Ses aç/kapat - sol üst köşe */}
+        <SoundToggle soundOn={soundOn} onToggle={toggleSound} />
+
+        {/* Geri oku - sol kenar (ilk sayfadaysak gizlenir) */}
+        <NavArrow
+          direction="prev"
+          onClick={prevPage}
+          hidden={currentPage === 0}
+        />
+
+        {/* İleri oku - sağ kenar (son sayfadaysak gizlenir) */}
+        <NavArrow
+          direction="next"
+          onClick={nextPage}
+          hidden={currentPage === pages.length - 1}
+        />
       </div>
-
-      {/* ----- SABİT UI KATMANI (her sayfada aynı) ----- */}
-
-      {/* Ses aç/kapat - sol üst köşe */}
-      <SoundToggle soundOn={soundOn} onToggle={toggleSound} />
-
-      {/* Geri oku - sol kenar (ilk sayfadaysak gizlenir) */}
-      <NavArrow
-        direction="prev"
-        onClick={prevPage}
-        hidden={currentPage === 0}
-      />
-
-      {/* İleri oku - sağ kenar (son sayfadaysak gizlenir) */}
-      <NavArrow
-        direction="next"
-        onClick={nextPage}
-        hidden={currentPage === pages.length - 1}
-      />
     </div>
   )
 }
