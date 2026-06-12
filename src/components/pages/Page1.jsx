@@ -1,81 +1,67 @@
-// import { Howl } from 'howler'
+import IsilYurume from '../characters/IsilYurume.jsx'
+
+// Arka plan resmi: import edince Vite bize dosyanın url'ini verir.
+// Bu url'i aşağıda backgroundImage olarak kullanıyoruz.
+import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
 
 /* ---------------------------------------------------------------
-   GERÇEK GÖRSELLER HAZIR OLUNCA NASIL KULLANILIR?
+   YENİ MEDYA EKLERKEN HATIRLATMA:
 
-   1. Arka plan resmi (jpg/png) -> src/assets/backgrounds/ içine koy:
-        import sahne1 from '../../assets/backgrounds/sahne1.jpg'
-      Sonra aşağıdaki en dış div'e şunu ekle:
-        style={{ backgroundImage: `url(${sahne1})` }}
-      ve "bg-cover bg-center" sınıflarını kullan.
+   - Ses efekti (mp3) -> src/assets/sounds/ içine koy:
+       import { Howl } from 'howler'
+       import merhabaSes from '../../assets/sounds/merhaba.mp3'
+       const ses = new Howl({ src: [merhabaSes] })
+       ses.play()   // örn. karaktere tıklanınca
 
-   2. Karakter animasyonu (Lottie JSON) -> src/assets/characters/ içine koy:
-        import Lottie from 'lottie-react'
-        import isilAnimasyon from '../../assets/characters/isil.json'
-      Placeholder div'in yerine:
-        <Lottie animationData={isilAnimasyon} loop />
-
-   3. Ses efekti (mp3) -> src/assets/sounds/ içine koy:
-        import merhabaSes from '../../assets/sounds/merhaba.mp3'
-        const ses = new Howl({ src: [merhabaSes] })
-        ses.play()   // örn. karaktere tıklanınca
+   - Yeni sprite karakter -> IsilYurume.jsx'i şablon olarak kopyala,
+     sadece glob yolundaki klasör adını değiştir.
 ---------------------------------------------------------------- */
 
 /**
  * Page1: Kitabın ilk sayfası - "Sevgi" bölümünün açılış sahnesi.
  *
- * Sahne düzeni (katman katman, alttan üste):
- *  1. Arka plan  : gökyüzü degradesi (şimdilik CSS, sonra resim olacak)
- *  2. Dekorlar   : güneş, bulutlar, tepeler, kalpler
- *  3. Karakterler: Işıl ve Canım (şimdilik placeholder, sonra Lottie)
- *  4. Metin      : sayfa başlığı ve hikaye cümlesi
+ * Katmanlar (alttan üste):
+ *  1. Arka plan  : sahne1-arkaplan.jpg (tam ekran, bg-cover)
+ *  2. Kalpler    : sevgi temasının animasyonlu süsleri
+ *  3. Karakterler: Işıl (gerçek sprite) ve Canım (hâlâ placeholder)
+ *  4. Metinler   : başlık ve hikaye cümlesi
  *
- * Konumlandırma mantığı:
- *  Tüm öğeler "absolute" + yüzde (%) değerlerle yerleştirildi.
- *  Yüzde kullanmak, sahnenin her ekran boyutunda (telefon/tablet)
- *  aynı oranlarda görünmesini sağlar.
+ * Konumlandırma: absolute + yüzde (%) değerler.
+ * Yüzde sayesinde sahne her ekran boyutunda aynı oranda görünür.
  */
 function Page1() {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-gradient-to-b from-gokyuzu via-[#ffe9f0] to-krem">
-      {/* ================= DEKORLAR ================= */}
-
-      {/* Güneş - sağ üst köşe (iki iç içe daire ile parlama efekti) */}
-      <div className="absolute right-[8%] top-[8%] h-24 w-24 rounded-full bg-gunes opacity-40 blur-xl md:h-36 md:w-36" />
-      <div className="absolute right-[10%] top-[10%] h-16 w-16 rounded-full bg-gunes shadow-lg md:h-24 md:w-24" />
-
-      {/* Bulutlar - yavaşça süzülür (animate-yuzen: index.css'te tanımlı) */}
-      <div className="animate-yuzen absolute left-[15%] top-[12%] h-8 w-24 rounded-full bg-white/80 md:h-12 md:w-36" />
-      <div
-        className="animate-yuzen absolute left-[45%] top-[6%] h-6 w-20 rounded-full bg-white/60 md:h-10 md:w-32"
-        style={{ animationDelay: '2s' }} /* aynı anda hareket etmesinler */
-      />
-
-      {/* Tepeler - ekranın altında iki yeşil yarım daire */}
-      <div className="absolute -bottom-[18%] -left-[10%] h-[45%] w-[70%] rounded-[50%] bg-cimen" />
-      <div className="absolute -bottom-[22%] -right-[15%] h-[48%] w-[75%] rounded-[50%] bg-cimen brightness-95" />
-
-      {/* Uçuşan kalpler - "Sevgi" temasının simgesi (animate-kalp ile atar) */}
+    <div
+      className="relative h-full w-full overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: `url(${sahne1Arkaplan})` }}
+    >
+      {/* ================= DEKOR: UÇUŞAN KALPLER =================
+          (animate-kalp index.css'te tanımlı; animationDelay ile
+           aynı anda atmıyorlar, daha doğal duruyor) */}
       <div className="animate-kalp absolute left-[28%] top-[30%] text-3xl md:text-4xl">💗</div>
       <div className="animate-kalp absolute right-[30%] top-[22%] text-2xl md:text-3xl" style={{ animationDelay: '0.8s' }}>💖</div>
       <div className="animate-kalp absolute left-[55%] top-[40%] text-xl md:text-2xl" style={{ animationDelay: '1.6s' }}>💕</div>
 
       {/* ================= KARAKTERLER ================= */}
 
-      {/* IŞIL (ana karakter) - sahnenin sol-orta kısmında durur.
-          Bu div ileride <Lottie animationData={...} /> ile değişecek. */}
-      <div className="animate-sallan absolute bottom-[12%] left-[18%] flex flex-col items-center">
-        {/* Placeholder gövde */}
-        <div className="flex h-32 w-24 items-center justify-center rounded-[45%] border-4 border-dashed border-seker bg-white/70 backdrop-blur-sm md:h-48 md:w-36">
-          <span className="text-4xl md:text-6xl">👧</span>
-        </div>
-        {/* Karakter ismi etiketi */}
-        <span className="mt-2 rounded-full bg-seker px-4 py-1 font-baslik text-sm font-bold text-white shadow-md md:text-base">
-          Işıl
-        </span>
-      </div>
+      {/* IŞIL - sahnenin solunda, zemin hizasında.
+          isPlaying={false}: şimdilik duruş pozunda bekliyor;
+          yürüme animasyonunu ileride bir olayla (tıklama, sayfa
+          açılışı vb.) tetikleyeceğiz.
+          width: clamp(min, tercih, max) -> telefonda 120px'in altına
+          inmez, tablette ekranın %18'i kadar olur, 260px'i aşmaz. */}
+      <IsilYurume
+        isPlaying={false}
+        width="clamp(120px, 18vw, 260px)"
+        style={{
+          position: 'absolute',
+          bottom: '8%',
+          left: '12%',
+        }}
+      />
 
-      {/* CANIM (konuşan çiçek) - Işıl'ın sağında, biraz daha küçük */}
+      {/* CANIM (konuşan çiçek) - görseli henüz hazır değil, placeholder.
+          Hazır olunca IsilYurume gibi bir sprite component'e dönüşecek. */}
       <div
         className="animate-sallan absolute bottom-[10%] right-[24%] flex flex-col items-center"
         style={{ animationDelay: '1.2s' }}

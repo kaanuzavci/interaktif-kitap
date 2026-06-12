@@ -1,5 +1,8 @@
 node_modules/
 dist/
+
+# Optimizasyon scriptinin aldığı orijinal görsel yedekleri (çok büyük, repoya girmesin)
+asset-yedek/
 .env
 *.log
 Thumbs.db
