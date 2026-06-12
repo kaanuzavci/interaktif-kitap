@@ -21,7 +21,7 @@ import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
    İNCE AYAR: Işıl yola tam basmıyorsa SADECE bu sayılarla oyna.
 ---------------------------------------------------------------- */
 const YURUYUS_ROTASI = [
-  { left: '29%', bottom: '10%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
+  { left: '27%', bottom: '9%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
   { left: '36%', bottom: '8.7%' },   // 1: yol hafifçe iniyor
   { left: '41%', bottom: '9.5%' },    // 2: yolun en alçak kısmı
   { left: '49%', bottom: '10.5%' },// 3: varış - sağ kenar sağ sınırda (~%60)
@@ -29,10 +29,11 @@ const YURUYUS_ROTASI = [
 
 /* Yürüme hızı: saniyede kaç "sahne yüzdesi" yol alsın.
    Küçültmek = yavaşlatmak. Süreyi her durak arası mesafeden
-   hesapladığımız için hız, rotanın her yerinde sabit kalıyor
-   (eskiden her segment eşit süreydi; kısa segmentte yavaş,
-   uzunda hızlı yürüyordu). */
-const HIZ = 6
+   hesapladığımız için hız, rotanın her yerinde sabit kalıyor.
+   Adımlamanın hızı ise ayrı: IsilYurume.jsx'teki FRAME_SURESI_MS.
+   İkisi uyumsuz olursa "kayarak yürüme" hissi oluşur; bu ikiliyi
+   birlikte ayarla (hızı artırırsan frame süresini kısalt). */
+const HIZ = 3.5
 
 // İki durak arası yürüyüş süresi (saniye). Mesafeyi Pisagor'la
 // buluyoruz; bottom yüzdeleri yatayla aynı ölçeğe getirmek için
@@ -102,7 +103,7 @@ function Page1() {
       <div
         className="absolute z-10"
         style={{
-          width: '13.5%',
+          width: '15.5%',
           left: YURUYUS_ROTASI[hedefIndex].left,
           bottom: YURUYUS_ROTASI[hedefIndex].bottom,
           transition:
