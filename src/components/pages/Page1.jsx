@@ -21,29 +21,38 @@ import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
    İNCE AYAR: Işıl yola tam basmıyorsa SADECE bu sayılarla oyna.
 ---------------------------------------------------------------- */
 const YURUYUS_ROTASI = [
-  { left: '27%', bottom: '9%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
-  { left: '36%', bottom: '8.7%' },   // 1: yol hafifçe iniyor
-  { left: '41%', bottom: '9.5%' },    // 2: yolun en alçak kısmı
-  { left: '49%', bottom: '10.5%' },// 3: varış - sağ kenar sağ sınırda (~%60)
+  { left: '27%', bottom: '1%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
+  { left: '36%', bottom: '1%' },   // 1: yol hafifçe iniyor
+  { left: '41%', bottom: '1%' },    // 2: yolun en alçak kısmı
+  { left: '49%', bottom: '1%' },// 3: varış - sağ kenar sağ sınırda (~%60)
 ]
 
-/* Yürüme hızı: saniyede kaç "sahne yüzdesi" yol alsın.
-   Küçültmek = yavaşlatmak. Süreyi her durak arası mesafeden
-   hesapladığımız için hız, rotanın her yerinde sabit kalıyor.
-   Adımlamanın hızı ise ayrı: IsilYurume.jsx'teki FRAME_SURESI_MS.
-   İkisi uyumsuz olursa "kayarak yürüme" hissi oluşur; bu ikiliyi
-   birlikte ayarla (hızı artırırsan frame süresini kısalt). */
-const HIZ = 3.5
+/* ---------------------------------------------------------------
+   HIZ AYARLARI - iki ayrı şey var, ikisinin UYUMU önemli:
+
+   1. HIZ          : ekranda ilerleme (saniyede kaç sahne-yüzdesi)
+   2. FRAME_SURESI : bacakların temposu (bir pozun süresi, ms)
+
+   Uyumsuzluk belirtileri:
+   - "Kayarak gidiyor" (bacaklar yavaş, zemin hızlı)  -> HIZ'ı düşür
+   - "Yerinde sayıyor" (bacaklar hızlı, az ilerliyor) -> FRAME_SURESI'ni artır
+
+   Geliştirme modunda (npm run dev) ekranın sol altında çıkan
+   AYAR PANELİ ile ikisini canlı deneyebilirsin. Doğru hissi
+   bulunca değerleri buraya yaz - kalıcı hale gelir.
+---------------------------------------------------------------- */
+const HIZ = 2.5
+const FRAME_SURESI = 150
 
 // İki durak arası yürüyüş süresi (saniye). Mesafeyi Pisagor'la
 // buluyoruz; bottom yüzdeleri yatayla aynı ölçeğe getirmek için
 // 9/16 ile çarpıyoruz (sahne 16:9 - dikey %1, yatay %1'den kısadır).
-function segmentSuresi(hedefIndex) {
+function segmentSuresi(hedefIndex, hiz) {
   const onceki = YURUYUS_ROTASI[hedefIndex - 1]
   const hedef = YURUYUS_ROTASI[hedefIndex]
   const dx = parseFloat(hedef.left) - parseFloat(onceki.left)
   const dy = (parseFloat(hedef.bottom) - parseFloat(onceki.bottom)) * (9 / 16)
-  return Math.hypot(dx, dy) / HIZ
+  return Math.hypot(dx, dy) / hiz
 }
 
 /**
@@ -63,6 +72,16 @@ function Page1() {
 
   // Işıl şu an yürüyor mu? (sprite animasyonu oynasın mı)
   const [yuruyor, setYuruyor] = useState(false)
+
+  // Ayar panelinin canlı değerleri (başlangıçta üstteki sabitler)
+  const [hiz, setHiz] = useState(HIZ)
+  const [frameSuresi, setFrameSuresi] = useState(FRAME_SURESI)
+
+  // Ayar panelindeki "Başa sar" butonu: Işıl'ı başlangıca ışınla
+  const basaSar = () => {
+    setYuruyor(false)
+    setHedefIndex(0) // hedefIndex 0'da transition 'none' -> anında döner
+  }
 
   // Canım'a dokunulunca: rota başlasın (zaten yoldaysa/vardıysa tekrar başlamasın)
   const canimaTiklandi = () => {
@@ -103,17 +122,17 @@ function Page1() {
       <div
         className="absolute z-10"
         style={{
-          width: '15.5%',
+          width: '17.5%',
           left: YURUYUS_ROTASI[hedefIndex].left,
           bottom: YURUYUS_ROTASI[hedefIndex].bottom,
           transition:
             hedefIndex === 0
               ? 'none'
-              : `left ${segmentSuresi(hedefIndex)}s linear, bottom ${segmentSuresi(hedefIndex)}s linear`,
+              : `left ${segmentSuresi(hedefIndex, hiz)}s linear, bottom ${segmentSuresi(hedefIndex, hiz)}s linear`,
         }}
         onTransitionEnd={duragaVardi}
       >
-        <IsilYurume isPlaying={yuruyor} width="100%" />
+        <IsilYurume isPlaying={yuruyor} width="100%" frameSuresiMs={frameSuresi} />
       </div>
 
       {/* ================= CANIM (z-30) - dokununca Işıl'ı çağırır ================= */}
@@ -149,6 +168,44 @@ function Page1() {
       <p className="absolute left-1/2 top-[15%] z-30 w-[60%] max-w-xl -translate-x-1/2 rounded-3xl border-4 border-seker/40 bg-white/90 px-6 py-3 text-center font-metin text-base font-semibold text-gece shadow-lg backdrop-blur-sm md:text-xl">
         Işıl, bahçesindeki konuşan çiçeği Canım&apos;la her sabah selamlaşırdı.
       </p>
+
+      {/* ================= AYAR PANELİ (SADECE GELİŞTİRME) =================
+          import.meta.env.DEV: "npm run dev"de true, "npm run build"de false.
+          Yani bu panel yayınlanan kitapta ASLA görünmez.
+          Doğru hissi bulunca değerleri dosyanın başındaki HIZ ve
+          FRAME_SURESI sabitlerine yaz. */}
+      {import.meta.env.DEV && (
+        <div className="absolute bottom-3 left-3 z-50 w-64 rounded-2xl bg-gece/90 p-4 font-metin text-sm text-white shadow-xl">
+          <p className="mb-2 font-baslik font-bold">🔧 Yürüyüş ayarları</p>
+
+          <label className="block">
+            Hız: <b>{hiz}</b> (ekranda ilerleme)
+            <input
+              type="range" min="1" max="8" step="0.5"
+              value={hiz}
+              onChange={(e) => setHiz(Number(e.target.value))}
+              className="w-full"
+            />
+          </label>
+
+          <label className="mt-2 block">
+            Adım süresi: <b>{frameSuresi}ms</b> (bacak temposu)
+            <input
+              type="range" min="60" max="300" step="10"
+              value={frameSuresi}
+              onChange={(e) => setFrameSuresi(Number(e.target.value))}
+              className="w-full"
+            />
+          </label>
+
+          <button
+            onClick={basaSar}
+            className="mt-3 w-full rounded-full bg-gunes py-1.5 font-baslik font-bold text-gece"
+          >
+            ⏪ Başa sar
+          </button>
+        </div>
+      )}
     </div>
   )
 }

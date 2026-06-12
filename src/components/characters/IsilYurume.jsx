@@ -27,11 +27,11 @@ const frames = Object.keys(frameModulleri)
   .sort()
   .map((dosyaYolu) => frameModulleri[dosyaYolu])
 
-/* Her pozun ekranda kalma süresi (ms).
-   8 pozluk döngüde bir tam adım çifti = 8 x 110 = ~0.9 saniye.
-   Adımlama çok hızlı/yavaş gelirse bu sayıyla oyna.
+/* Her pozun ekranda kalma süresi (ms) - VARSAYILAN değer.
+   Sayfa isterse frameSuresiMs prop'uyla farklı bir değer verebilir
+   (Page1'deki ayar paneli bunu kullanıyor).
    (Yürüme HIZI ayrı bir şey - o Page1.jsx'teki HIZ sabitinde.) */
-const FRAME_SURESI_MS = 110
+const FRAME_SURESI_MS = 150
 
 /**
  * IsilYurume: Işıl'ın yürüme animasyonu (sprite animasyon).
@@ -41,12 +41,18 @@ const FRAME_SURESI_MS = 110
  *  - Son frame'den sonra başa dönüyor (% operatörü ile, aşağıda).
  *
  * Props:
- *  - width     : karakterin genişliği (örn. 200 veya "18vw")
- *  - style     : pozisyon vb. için ek stil (parent'tan gelir)
- *  - isPlaying : true  -> yürüme animasyonu oynar
- *                false -> ilk frame'de (duruş pozu) sabit durur
+ *  - width        : karakterin genişliği (örn. 200, "18vw" veya "100%")
+ *  - style        : pozisyon vb. için ek stil (parent'tan gelir)
+ *  - isPlaying    : true  -> yürüme animasyonu oynar
+ *                   false -> ilk frame'de (duruş pozu) sabit durur
+ *  - frameSuresiMs: bir pozun ekranda kalma süresi (adım temposu)
  */
-function IsilYurume({ width = 200, style = {}, isPlaying = false }) {
+function IsilYurume({
+  width = 200,
+  style = {},
+  isPlaying = false,
+  frameSuresiMs = FRAME_SURESI_MS,
+}) {
   // Şu an gösterilen frame'in dizideki sırası (0'dan başlar)
   const [frameIndex, setFrameIndex] = useState(0)
 
@@ -78,10 +84,10 @@ function IsilYurume({ width = 200, style = {}, isPlaying = false }) {
 
     const zamanlayici = setInterval(() => {
       setFrameIndex((onceki) => (onceki + 1) % frames.length)
-    }, FRAME_SURESI_MS)
+    }, frameSuresiMs)
 
     return () => clearInterval(zamanlayici) // temizlik
-  }, [isPlaying])
+  }, [isPlaying, frameSuresiMs])
 
   // Klasör boşsa (frame'ler henüz eklenmemişse) hata vermeden çık
   if (frames.length === 0) return null
