@@ -1,0 +1,87 @@
+/* Tailwind v4: tek satır import yeterli, ayrı tailwind.config.js gerekmez.
+   Tema özelleştirmeleri aşağıdaki @theme bloğunda yapılır. */
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------
+   TEMA: "Sevgi" bölümü için sıcak, pastel, çocuk dostu renk paleti.
+   Buradaki her değişken otomatik olarak Tailwind sınıfına dönüşür:
+   --color-gunes  ->  bg-gunes, text-gunes, border-gunes ...
+   --font-baslik  ->  font-baslik
+---------------------------------------------------------------- */
+@theme {
+  /* Fontlar (index.html'de Google Fonts'tan yükleniyor) */
+  --font-baslik: "Baloo 2", cursive;
+  --font-metin: "Quicksand", sans-serif;
+
+  /* Renk paleti */
+  --color-gunes: #ffd166;      /* sıcak sarı  - güneş, vurgular        */
+  --color-seker: #ff8fab;      /* şeker pembe - kalpler, sevgi teması  */
+  --color-gokyuzu: #bde3ff;    /* açık mavi   - gökyüzü                */
+  --color-cimen: #9bde7e;      /* taze yeşil  - çimen, tepeler         */
+  --color-gece: #5a4a78;       /* yumuşak mor - koyu metin rengi       */
+  --color-krem: #fff6e9;       /* krem        - açık zeminler          */
+
+  /* Sayfa geçişi (fade) süresi - Book.jsx'teki setTimeout ile aynı olmalı */
+  --fade-sure: 400ms;
+
+  /* Özel animasyonlar (keyframe'leri aşağıda tanımlı) */
+  --animate-sallan: sallan 3s ease-in-out infinite;
+  --animate-yuzen: yuzen 6s ease-in-out infinite;
+  --animate-kalp: kalp 2.5s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------
+   GENEL SAYFA AYARLARI
+   Kitap tam ekran çalışır: kaydırma yok, taşma yok.
+---------------------------------------------------------------- */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;          /* kitapta kaydırma çubuğu istemiyoruz */
+  font-family: var(--font-metin);
+  background: var(--color-krem);
+  /* Mobilde dokununca mavi vurgu çıkmasın, metin seçilmesin */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  touch-action: manipulation; /* çift dokunma zoom'unu kapatır */
+}
+
+/* ---------------------------------------------------------------
+   ANİMASYON KEYFRAME'LERİ
+---------------------------------------------------------------- */
+
+/* Karakterlerin yumuşakça aşağı-yukarı sallanması (nefes alma hissi) */
+@keyframes sallan {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(-12px) rotate(1.5deg); }
+}
+
+/* Bulutların yavaşça sağa-sola süzülmesi */
+@keyframes yuzen {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(28px); }
+}
+
+/* Kalplerin büyüyüp küçülerek "atması" */
+@keyframes kalp {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%      { transform: scale(1.25); opacity: 1; }
+}
+
+/* ---------------------------------------------------------------
+   DİKEY MOD UYARISI
+   Kitap yatay (landscape) tasarlandı. Telefon dik tutulursa
+   "cihazını çevir" mesajı gösterilir (bkz. App.jsx).
+---------------------------------------------------------------- */
+.dikey-uyari {
+  display: none; /* yatay modda gizli */
+}
+
+@media (orientation: portrait) {
+  .dikey-uyari {
+    display: flex; /* dikey modda görünür */
+  }
+}
