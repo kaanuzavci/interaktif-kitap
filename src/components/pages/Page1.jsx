@@ -4,28 +4,27 @@ import IsilYurume from '../characters/IsilYurume.jsx'
 // Arka plan resmi: import edince Vite bize dosyanın url'ini verir.
 import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
 
-// Ön plan çiçek katmanı: arka plandan kesilmiş saydam PNG
-// (scripts/cikar-on-cicekler.ps1 üretiyor). Işıl'ın ÖNÜNE konunca
-// "çiçeklerin arkasından yürüme" efekti oluşuyor.
-import onCicekler from '../../assets/backgrounds/sahne1-on-cicekler.png'
-
 /* ---------------------------------------------------------------
    YÜRÜYÜŞ ROTASI (waypoint sistemi)
 
+   Işıl SADECE yolun açıkta kalan bölümünde yürür:
+   sol sınır = sahnenin ~%30'u, sağ sınır = ~%60'ı.
+   (Çiçeklerin arkasına/önüne geçme derdi kalmasın diye böyle.)
+
    Işıl ara duraklardan (waypoint) geçerek yürüyor; yolun inişine
    uyması için her durakta hem left hem bottom değişebiliyor.
-   - left   : soldan uzaklık (sahne genişliğinin yüzdesi)
+   - left   : KARAKTERİN SOL KENARININ soldan uzaklığı (sahne %'si).
+              Ayaklar kabaca karakter kutusunun ortasına bastığı için
+              "ayak konumu" = left + genişliğin yarısı (~%5).
    - bottom : alttan uzaklık (sahne yüksekliğinin yüzdesi)
 
    İNCE AYAR: Işıl yola tam basmıyorsa SADECE bu sayılarla oyna.
 ---------------------------------------------------------------- */
 const YURUYUS_ROTASI = [
-  { left: '1%', bottom: '19%' },  // 0: yolun EN BAŞI (çiçeklerin arkası)
-  { left: '14%', bottom: '16%' }, // 1: lale kümesinden çıkış
-  { left: '28%', bottom: '14%' }, // 2: yol alçalmaya devam ediyor
-  { left: '40%', bottom: '10%' }, // 3: iniş
-  { left: '52%', bottom: '8%' },  // 4: yolun en alçak noktası
-  { left: '61%', bottom: '9%' },  // 5: varış - Canım'ın yanı
+  { left: '25%', bottom: '12%' },   // 0: başlangıç - ayaklar sol sınırda (~%30)
+  { left: '33%', bottom: '10%' },   // 1: yol hafifçe iniyor
+  { left: '41%', bottom: '9%' },    // 2: yolun en alçak kısmı
+  { left: '49.5%', bottom: '9.5%' },// 3: varış - sağ kenar sağ sınırda (~%60)
 ]
 
 /* Yürüme hızı: saniyede kaç "sahne yüzdesi" yol alsın.
@@ -50,9 +49,7 @@ function segmentSuresi(hedefIndex) {
  * Page1: Kitabın ilk sayfası - "Sevgi" bölümünün açılış sahnesi.
  *
  * KATMAN SIRASI (z-index, alttan üste):
- *   arka plan (resim) < Işıl (z-10) < ön çiçekler (z-20) < Canım/metin (z-30)
- *   Işıl çiçek katmanının altında olduğu için yolun başında
- *   çiçeklerin arkasında, ama arka plandaki çimenlerin önünde görünür.
+ *   arka plan (resim) < Işıl (z-10) < Canım/metin (z-30)
  *
  * ETKİLEŞİM: Canım'a dokununca Işıl rotayı takip ederek yanına yürür.
  *  - "hedefIndex": şu an hangi durağa doğru gidiyor
@@ -103,14 +100,14 @@ function Page1() {
       <div className="animate-kalp absolute right-[30%] top-[22%] text-2xl md:text-3xl" style={{ animationDelay: '0.8s' }}>💖</div>
       <div className="animate-kalp absolute left-[55%] top-[40%] text-xl md:text-2xl" style={{ animationDelay: '1.6s' }}>💕</div>
 
-      {/* ================= IŞIL (z-10: çiçek katmanının ALTINDA) =================
+      {/* ================= IŞIL (z-10) =================
           Konumu hedefIndex'teki duraktan geliyor; durak değişince CSS
           transition onu oraya, mesafeye göre hesaplanan sürede taşıyor.
-          width %9.5 = sahne genişliğinin yüzdesi (sahne büyüyünce o da büyür). */}
+          width %10.5 = sahne genişliğinin yüzdesi (sahne büyüyünce o da büyür). */}
       <div
         className="absolute z-10"
         style={{
-          width: '9.5%',
+          width: '10.5%',
           left: YURUYUS_ROTASI[hedefIndex].left,
           bottom: YURUYUS_ROTASI[hedefIndex].bottom,
           transition:
@@ -122,16 +119,6 @@ function Page1() {
       >
         <IsilYurume isPlaying={yuruyor} width="100%" />
       </div>
-
-      {/* ================= ÖN ÇİÇEK KATMANI (z-20: Işıl'ın ÖNÜNDE) =================
-          Arka planla piksel piksel aynı olduğu için göze görünmez;
-          tek görevi Işıl'ı arkasında bırakmak. */}
-      <img
-        src={onCicekler}
-        alt=""
-        className="pointer-events-none absolute bottom-0 left-0 z-20 w-[37%]"
-        draggable={false}
-      />
 
       {/* ================= CANIM (z-30) - dokununca Işıl'ı çağırır ================= */}
       <button
