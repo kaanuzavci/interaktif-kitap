@@ -28,6 +28,14 @@
   --animate-sallan: sallan 3s ease-in-out infinite;
   --animate-yuzen: yuzen 6s ease-in-out infinite;
   --animate-kalp: kalp 2.5s ease-in-out infinite;
+  --animate-isin: isin 40s linear infinite;          /* güneş ışınları döner   */
+  --animate-kanat: kanat 1.6s ease-in-out infinite;  /* kelebek kanat çırpar   */
+  --animate-parilti: parilti 2.2s ease-in-out infinite; /* yıldız parıldar     */
+  --animate-ziplama: ziplama 1.4s ease-in-out infinite; /* "Başla" pili zıplar */
+
+  /* Giriş (açılış) animasyonları - bir kez oynar, durduğu yerde kalır (both) */
+  --animate-belir-yukari: belirYukari 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop: pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* ---------------------------------------------------------------
@@ -69,6 +77,54 @@ body,
 @keyframes kalp {
   0%, 100% { transform: scale(1); opacity: 0.85; }
   50%      { transform: scale(1.25); opacity: 1; }
+}
+
+/* Güneş ışınlarının yavaşça dönmesi */
+@keyframes isin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Kelebeğin kanat çırpması (hafif yatay sıkışma + süzülme) */
+@keyframes kanat {
+  0%, 100% { transform: translateY(0) scaleX(1); }
+  50%      { transform: translateY(-6px) scaleX(0.75); }
+}
+
+/* Yıldız/parıltı: belirip kaybolan ışıltı */
+@keyframes parilti {
+  0%, 100% { transform: scale(0.7) rotate(0deg); opacity: 0.35; }
+  50%      { transform: scale(1.1) rotate(20deg); opacity: 1; }
+}
+
+/* "Başla" pilinin yumuşak zıplaması */
+@keyframes ziplama {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* Açılışta aşağıdan belirme (başlık, footer) */
+@keyframes belirYukari {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Açılışta "pop" ile büyüyerek belirme (kartlar) */
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.8) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ---------------------------------------------------------------
+   HAREKETLERİ AZALT (ayarlardan açılır)
+   .hareketsiz sınıfı bir kapsayıcıya eklenince içindeki tüm
+   animasyonlar durur - aşırı uyarımdan rahatsız olan çocuklar için.
+---------------------------------------------------------------- */
+.hareketsiz *,
+.hareketsiz *::before,
+.hareketsiz *::after {
+  animation: none !important;
+  transition: none !important;
 }
 
 /* ---------------------------------------------------------------
