@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Howler } from 'howler'
 import Page1 from './pages/Page1.jsx'
 import Page2 from './pages/Page2.jsx'
 import NavArrow from './ui/NavArrow.jsx'
 import SoundToggle from './ui/SoundToggle.jsx'
+import HomeButton from './ui/HomeButton.jsx'
 
 /**
  * SAYFA LİSTESİ
@@ -22,20 +22,25 @@ const FADE_SURESI = 400
  * Book: Kitabın "beyni". Şunları yönetir:
  *  - currentPage : şu an hangi sayfadayız (0'dan başlar)
  *  - Sayfa geçişlerindeki fade (kararıp açılma) efekti
- *  - Ses açık/kapalı durumu
- *  - Sabit UI katmanı: ileri/geri okları ve ses butonu
+ *  - Sabit UI katmanı: ana menü/ses butonları ve ileri/geri okları
  *    (Bunlar her sayfada ortak olduğu için tek tek sayfalara değil,
  *     buraya konuldu. Böylece her yeni sayfada tekrar yazmak gerekmez.)
+ *
+ * Props (App'ten gelir):
+ *  - bolum         : okunan bölümün id'si (ileride sayfa seçimi için)
+ *  - soundOn       : ses açık mı?
+ *  - onToggleSound : ses aç/kapat fonksiyonu
+ *  - onHome        : ana menüye dönüş fonksiyonu
+ *
+ * Not: Ses durumu artık App'te tutuluyor (giriş ekranıyla paylaşıldığı
+ * için). Sayfa geçiş sistemi değişmedi.
  */
-function Book() {
+function Book({ soundOn, onToggleSound, onHome }) {
   // Şu an gösterilen sayfanın indeksi (0 = ilk sayfa)
   const [currentPage, setCurrentPage] = useState(0)
 
   // Fade efekti için: false olunca sayfa görünmez olur (opacity 0)
   const [isVisible, setIsVisible] = useState(true)
-
-  // Ses açık mı? Howler.mute() TÜM sesleri tek seferde susturur.
-  const [soundOn, setSoundOn] = useState(true)
 
   /**
    * Sayfa değiştirme - fade efektinin çalışma mantığı:
@@ -58,14 +63,6 @@ function Book() {
   // Okların kullandığı kısayol fonksiyonlar
   const nextPage = () => goToPage(currentPage + 1)
   const prevPage = () => goToPage(currentPage - 1)
-
-  // Ses butonuna basılınca: durumu tersine çevir ve Howler'a bildir
-  const toggleSound = () => {
-    setSoundOn((onceki) => {
-      Howler.mute(onceki) // ses açıksa sustur, kapalıysa aç
-      return !onceki
-    })
-  }
 
   // Gösterilecek sayfa component'ini diziden seç
   const CurrentPageComponent = pages[currentPage]
@@ -104,7 +101,10 @@ function Book() {
           bile butonlar her zaman ekranın içinde kalır. */}
 
       {/* Ses aç/kapat - sol üst köşe */}
-      <SoundToggle soundOn={soundOn} onToggle={toggleSound} />
+      <SoundToggle soundOn={soundOn} onToggle={onToggleSound} />
+
+      {/* Ana menüye dön - ses butonunun yanında */}
+      <HomeButton onClick={onHome} />
 
       {/* Geri oku - sol kenar (ilk sayfadaysak gizlenir) */}
       <NavArrow
