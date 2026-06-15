@@ -1,51 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 /* ---------------------------------------------------------------
-   FRAME'LERİ OTOMATİK YÜKLEME
-
-   40 ayrı "import ... from ..." satırı yazmak yerine Vite'ın
-   import.meta.glob() özelliğini kullanıyoruz: verilen desene uyan
-   TÜM dosyaları tek seferde import eder ve bir obje döndürür:
-
-     { '../../assets/.../isil_frame_01.png': 'dosyanın-url-i', ... }
-
-   - eager: true        -> dosyalar hemen yüklensin (lazy değil)
-   - import: 'default'  -> direkt url string'i gelsin
-
-   Avantajı: klasöre frame eklenince/silinince kodu değiştirmek
-   gerekmez, dizi kendini günceller.
+   FRAME'LERİ OTOMATİK YÜKLEME (import.meta.glob)
+   Klasördeki tüm pozları sıralı bir url dizisine çevirir.
 ---------------------------------------------------------------- */
 const frameModulleri = import.meta.glob(
   '../../assets/characters/isil-yurume/*.png',
   { eager: true, import: 'default' },
 )
-
-// Objeyi sıralı bir diziye çevir: [url01, url02, ...]
-// Dosya adlarındaki numaralar 01, 02 ... şeklinde sıfır dolgulu olduğu
-// için alfabetik sıralama (sort) aynı zamanda sayısal sıralamadır.
 const frames = Object.keys(frameModulleri)
   .sort()
   .map((dosyaYolu) => frameModulleri[dosyaYolu])
 
-/* Her pozun ekranda kalma süresi (ms) - VARSAYILAN değer.
-   Sahne isterse frameSuresiMs prop'uyla farklı bir değer verebilir
-   (SevgiSahne1.jsx'teki ayar paneli bunu kullanıyor).
-   (Yürüme HIZI ayrı bir şey - o SevgiSahne1.jsx'teki HIZ sabitinde.) */
+/* Her pozun ekranda kalma süresi (ms) - VARSAYILAN (SevgiSahne1 override eder). */
 const FRAME_SURESI_MS = 150
 
 /**
  * IsilYurume: Işıl'ın yürüme animasyonu (sprite animasyon).
  *
- * Çalışma mantığı:
- *  - Tek bir <img> var; her 80ms'de src'si bir sonraki frame'le değişiyor.
- *  - Son frame'den sonra başa dönüyor (% operatörü ile, aşağıda).
+ * NEDEN requestAnimationFrame + imperatif <img>?
+ *  Eski sürüm setInterval + React state kullanıyordu. Işıl yürürken
+ *  (CSS konum geçişi + sık yeniden render + ağır layout) React, kare
+ *  state güncellemelerini erteleyebiliyor; CSS konumu bağımsız
+ *  ilerlediği için karakter "kayarak" gidiyor ama kare donuyordu
+ *  (F5'e kadar düzelmiyordu).
+ *
+ *  Bu sürümde animasyon React render döngüsünden TAMAMEN bağımsız:
+ *   - Tek bir rAF döngüsü component yaşadığı sürece çalışır; üst
+ *     bileşen ne kadar yeniden render olursa olsun ASLA teardown olmaz.
+ *   - Kare doğrudan <img>'in src'sine (ref ile) yazılır → React
+ *     reconcile'ı kareyi sıfırlayamaz, ertelenemez.
+ *   - İlerleme GERÇEK geçen süreye göre (drift yok, kendini düzeltir).
+ *   - isPlaying / frameSuresiMs ref ile okunur → döngü prop değişince
+ *     yeniden kurulmaz (eski hatanın kök nedeni buydu).
  *
  * Props:
- *  - width        : karakterin genişliği (örn. 200, "18vw" veya "100%")
- *  - style        : pozisyon vb. için ek stil (parent'tan gelir)
- *  - isPlaying    : true  -> yürüme animasyonu oynar
- *                   false -> ilk frame'de (duruş pozu) sabit durur
- *  - frameSuresiMs: bir pozun ekranda kalma süresi (adım temposu)
+ *  - width        : karakter genişliği (örn. 200, "18vw", "100%")
+ *  - style        : ek stil (parent'tan)
+ *  - isPlaying    : true -> yürüme oynar, false -> ilk karede (duruş) durur
+ *  - frameSuresiMs: bir pozun süresi (adım temposu)
  */
 function IsilYurume({
   width = 200,
@@ -53,14 +46,15 @@ function IsilYurume({
   isPlaying = false,
   frameSuresiMs = FRAME_SURESI_MS,
 }) {
-  // Şu an gösterilen frame'in dizideki sırası (0'dan başlar)
-  const [frameIndex, setFrameIndex] = useState(0)
+  const imgRef = useRef(null)
+  // Prop'ları ref'te tutuyoruz ki rAF döngüsü onları güncel okusun
+  // ama prop değişince effect yeniden KURULMASIN (döngü hiç ölmesin).
+  const playingRef = useRef(isPlaying)
+  const sureRef = useRef(frameSuresiMs)
+  playingRef.current = isPlaying
+  sureRef.current = frameSuresiMs
 
-  /* Frame'leri tarayıcı hafızasına ÖNCEDEN yükle (preload).
-     Bunu yapmazsak: animasyonun ilk turunda her frame internetten/
-     diskten ilk kez yüklenir ve görüntü titrer. new Image() ile
-     görünmez birer kopya oluşturmak, hepsini önbelleğe alır.
-     [] bağımlılığı: component ilk ekrana geldiğinde 1 kez çalışır. */
+  // Frame'leri tarayıcı önbelleğine al (ilk turda titreme olmasın)
   useEffect(() => {
     frames.forEach((url) => {
       const img = new Image()
@@ -68,33 +62,51 @@ function IsilYurume({
     })
   }, [])
 
-  /* Animasyon döngüsü.
-     isPlaying değiştiğinde bu effect yeniden çalışır:
-     - true ise: 80ms'de bir frameIndex'i artıran bir zamanlayıcı kur.
-       "% frames.length" sihri: 39'dan sonra 40 % 40 = 0 -> başa döner.
-     - false ise: zamanlayıcı kurma, duruş pozuna (frame 0) dön.
-     return edilen fonksiyon "temizlik"tir: component ekrandan kalkınca
-     veya isPlaying değişince eski zamanlayıcıyı iptal eder
-     (yoksa zamanlayıcılar birikir ve animasyon hızlanırdı!). */
+  // Tek seferlik rAF döngüsü — component yaşadığı sürece çalışır
   useEffect(() => {
-    if (!isPlaying) {
-      setFrameIndex(0) // duruş pozisyonu = ilk frame
-      return
+    if (frames.length === 0) return
+
+    let rafId
+    let sonZaman // son kare değişim zamanı
+    let idx = 0
+
+    // Başlangıç karesi (duruş pozu) — imperatif
+    if (imgRef.current) imgRef.current.src = frames[0]
+
+    const tik = (zaman) => {
+      rafId = requestAnimationFrame(tik)
+
+      // Duruyorsa: ilk karede (duruş pozu) bekle
+      if (!playingRef.current) {
+        if (idx !== 0) {
+          idx = 0
+          if (imgRef.current) imgRef.current.src = frames[0]
+        }
+        sonZaman = zaman
+        return
+      }
+
+      if (sonZaman === undefined) sonZaman = zaman
+      // Yeterince süre geçtiyse bir sonraki kareye geç (gerçek süreye göre)
+      if (zaman - sonZaman >= sureRef.current) {
+        sonZaman = zaman
+        idx = (idx + 1) % frames.length
+        if (imgRef.current) imgRef.current.src = frames[idx]
+      }
     }
 
-    const zamanlayici = setInterval(() => {
-      setFrameIndex((onceki) => (onceki + 1) % frames.length)
-    }, frameSuresiMs)
+    rafId = requestAnimationFrame(tik)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
-    return () => clearInterval(zamanlayici) // temizlik
-  }, [isPlaying, frameSuresiMs])
-
-  // Klasör boşsa (frame'ler henüz eklenmemişse) hata vermeden çık
   if (frames.length === 0) return null
 
+  // DİKKAT: src JSX'te VERİLMEZ; rAF döngüsü imperatif olarak yazar.
+  // (src'yi JSX'e koyarsak React her render'da onu sıfırlar ve
+  //  imperatif güncellemeyle çakışır.)
   return (
     <img
-      src={frames[frameIndex]}
+      ref={imgRef}
       alt="Işıl"
       draggable={false}
       style={{ width, ...style }}
