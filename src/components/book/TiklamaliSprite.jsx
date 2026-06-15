@@ -1,26 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 /* ===============================================================
-   TIKLAMALI SPRITE — tam-kare (1920x1080) bir kare dizisini sahneye
-   ölçekleyip konumlandırarak gösteren, tıklayınca oynayan katman.
+   TIKLAMALI SPRITE — tam-kare bir kare dizisini sahneye ölçekleyip
+   konumlandıran, tıklayınca oynayan katman (tavşan/kütük, uğurböceği).
 
-   Tavşan (kütük) ve uğurböceği gibi varlıklar için kullanılır.
+   SAĞLAMLIK (önceki donma/takılma hatalarının kökten çözümü):
+   - Kare animasyonu React render döngüsünden ve setInterval/setTimeout'tan
+     TAMAMEN bağımsız. Tek bir requestAnimationFrame döngüsü, GERÇEK geçen
+     süreye göre hangi karede olunması gerektiğini hesaplar (zaman çizelgesi).
+   - Kare doğrudan <img>.src'ye (ref ile) yazılır → React erteleyemez/sıfırlayamaz.
+   - Her TIKLAMA animasyonu BAŞTAN başlatır (baslangic = şimdi). Önceki oynatma
+     yarım/takılı kalsa bile tıklayınca temiz başlar → ASLA kalıcı takılma olmaz.
+   - Sekmeye geri dönülünce (visibilitychange) döngü kendini toparlar.
+   - setInterval/setTimeout YOK → arka plan sekmesinde kısılıp takılı kalma yok.
 
-   YENİ: beklemeSuresiMs + bekleKare
-   Tavşan gibi "çık → dur → geri gir" istenen animasyonlar için:
-   belirtilen kareye (bekleKare) gelince animasyon duraklar,
-   beklemeSuresiMs kadar bekler, sonra devam eder.
+   bekleKare/beklemeSuresiMs: tavşanın "çık → bekle → geri gir" duraklaması
+   zaman çizelgesine süre eklenerek modellenir (yine elapsed-time, takılmaz).
 
-   - frames         : sıralı kare url'leri (tam-kare png'ler)
-   - olcek/x/y      : yerleştirme transform'u (ölçek, sol/üst kaydırma %)
-   - frameSuresiMs   : kare temposu
-   - tekrar          : tıklayınca diziyi kaç kez oynatsın
-   - bekleKare       : bu kareye gelince dur (null = durma)
-   - beklemeSuresiMs  : bekleKare'de ne kadar dur (ms)
-   - hotspot         : {left,top,width,height} (%) -> tıklanabilir alan
-   - etiket          : erişilebilirlik etiketi
-   - canli           : false ise etkileşim yok
-   - zIndex          : katman sırası (varsayılan 10)
+   Props: frames, olcek, x, y, frameSuresiMs, tekrar, bekleKare,
+          beklemeSuresiMs, hotspot, etiket, canli, zIndex
 =============================================================== */
 function TiklamaliSprite({
   frames,
@@ -36,14 +34,28 @@ function TiklamaliSprite({
   canli = true,
   zIndex = 10,
 }) {
-  const [frameIndex, setFrameIndex] = useState(0)
-  const [oynat, setOynat] = useState(false)
+  const imgRef = useRef(null)
+  const baslangicRef = useRef(null) // oynatma başlangıç zamanı (ms); null = dinlenme
+  const rafRef = useRef(0)
+  const canliRef = useRef(canli)
+  canliRef.current = canli
 
-  // Ref'ler ile interval/timeout yönetimi — state bağımsız, temiz temizlik
-  const intervalRef = useRef(null)
-  const timeoutRef = useRef(null)
-  const turRef = useRef(0)
-  const frameRef = useRef(0) // interval içinden güncel frame'e erişim
+  // Zaman çizelgesi: kümülatif {frame, until} segmentleri + toplam süre.
+  // `tekrar` kez tüm kareler oynar; bekleKare'de beklemeSuresiMs eklenir.
+  const cizelge = useMemo(() => {
+    if (!frames.length) return { seg: [], total: 0 }
+    const seg = []
+    let t = 0
+    for (let tur = 0; tur < tekrar; tur++) {
+      for (let f = 0; f < frames.length; f++) {
+        let dur = frameSuresiMs
+        if (bekleKare !== null && f === bekleKare && beklemeSuresiMs > 0) dur += beklemeSuresiMs
+        t += dur
+        seg.push({ frame: f, until: t })
+      }
+    }
+    return { seg, total: t }
+  }, [frames.length, frameSuresiMs, tekrar, bekleKare, beklemeSuresiMs])
 
   // Kareleri önceden tarayıcı önbelleğine al
   useEffect(() => {
@@ -53,87 +65,73 @@ function TiklamaliSprite({
     })
   }, [frames])
 
-  // Tüm zamanlayıcıları temizle
-  const temizle = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+  // Başlangıçta dinlenme karesi + unmount temizliği
+  useEffect(() => {
+    if (imgRef.current && frames.length) imgRef.current.src = frames[0]
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      rafRef.current = 0
     }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
+  }, [frames])
+
+  // rAF döngüsü — yalnızca oynarken çalışır, bitince temiz durur
+  const tik = (zaman) => {
+    const baslangic = baslangicRef.current
+    if (baslangic === null || cizelge.seg.length === 0) {
+      rafRef.current = 0
+      return
     }
+    const gecen = zaman - baslangic
+    if (gecen >= cizelge.total) {
+      // Bitti → dinlenme karesi, döngüyü durdur
+      baslangicRef.current = null
+      rafRef.current = 0
+      if (imgRef.current) imgRef.current.src = frames[0]
+      return
+    }
+    // Geçen süreye düşen kareyi bul
+    let f = frames.length - 1
+    for (let k = 0; k < cizelge.seg.length; k++) {
+      if (gecen < cizelge.seg[k].until) {
+        f = cizelge.seg[k].frame
+        break
+      }
+    }
+    if (imgRef.current) imgRef.current.src = frames[f]
+    rafRef.current = requestAnimationFrame(tik)
+  }
+
+  // HER tıklama animasyonu baştan başlatır → asla takılı kalmaz
+  const tikla = () => {
+    if (!canliRef.current || frames.length === 0) return
+    baslangicRef.current = performance.now()
+    if (!rafRef.current) rafRef.current = requestAnimationFrame(tik)
+  }
+
+  // Sekmeye dönülünce: oynuyor olması gerekirken döngü durmuşsa yeniden başlat
+  useEffect(() => {
+    const gorunur = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        baslangicRef.current !== null &&
+        !rafRef.current
+      ) {
+        rafRef.current = requestAnimationFrame(tik)
+      }
+    }
+    document.addEventListener('visibilitychange', gorunur)
+    return () => document.removeEventListener('visibilitychange', gorunur)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Oynatma döngüsünü başlat
-  const donguyuBaslat = useCallback(() => {
-    temizle()
+  if (frames.length === 0) return null
 
-    intervalRef.current = setInterval(() => {
-      const sonraki = frameRef.current + 1
-
-      // Dizinin sonuna geldik — tur tamamla veya yeniden başla
-      if (sonraki >= frames.length) {
-        turRef.current += 1
-        if (turRef.current >= tekrar) {
-          temizle()
-          frameRef.current = 0
-          setFrameIndex(0)
-          setOynat(false)
-          turRef.current = 0
-          return
-        }
-        // Sonraki tur
-        frameRef.current = 0
-        setFrameIndex(0)
-        return
-      }
-
-      // Bekleme karesi kontrolü
-      if (bekleKare !== null && sonraki === bekleKare && beklemeSuresiMs > 0) {
-        frameRef.current = sonraki
-        setFrameIndex(sonraki)
-        // Interval'i durdur, bekle, sonra devam et
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-        timeoutRef.current = setTimeout(() => {
-          timeoutRef.current = null
-          donguyuBaslat()
-        }, beklemeSuresiMs)
-        return
-      }
-
-      frameRef.current = sonraki
-      setFrameIndex(sonraki)
-    }, frameSuresiMs)
-  }, [frames.length, frameSuresiMs, tekrar, bekleKare, beklemeSuresiMs, temizle])
-
-  // oynat state'i değiştiğinde döngüyü kontrol et
-  useEffect(() => {
-    if (oynat) {
-      donguyuBaslat()
-    }
-    return temizle
-  }, [oynat, donguyuBaslat, temizle])
-
-  // Component unmount'ta temizle
-  useEffect(() => temizle, [temizle])
-
-  const tikla = useCallback(() => {
-    if (!canli || oynat) return // oynuyorsa yoksay, başa sarma
-    turRef.current = 0
-    frameRef.current = 0
-    setFrameIndex(0)
-    setOynat(true)
-  }, [canli, oynat])
-
-  if (!frames.length) return null
-
+  // src JSX'te VERİLMEZ; rAF döngüsü imperatif yazar (React sıfırlamasın).
+  // style (transform) JSX'te kalır ki ?ayar paneli canlı güncelleyebilsin.
   return (
     <>
-      {/* Görsel katman — tam-bleed, transform ile sahneye oturtulur */}
       <img
-        src={frames[frameIndex]}
+        ref={imgRef}
         alt=""
         draggable={false}
         className="pointer-events-none absolute inset-0 h-full w-full select-none"
@@ -143,7 +141,6 @@ function TiklamaliSprite({
           transform: `translate(${x}%, ${y}%) scale(${olcek})`,
         }}
       />
-      {/* Tıklama alanı — özneyi kapsayan saydam buton (yalnızca canlı modda) */}
       {canli && hotspot && (
         <button
           type="button"

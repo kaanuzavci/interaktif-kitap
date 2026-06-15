@@ -96,7 +96,18 @@ function IsilYurume({
     }
 
     rafId = requestAnimationFrame(tik)
-    return () => cancelAnimationFrame(rafId)
+
+    // Sekmeye geri dönülünce: zamanı sıfırla (uzun süre arka planda
+    // kaldıysa tek seferde sıçramasın). Döngü zaten bekleyen rAF ile sürer.
+    const gorunur = () => {
+      if (document.visibilityState === 'visible') sonZaman = undefined
+    }
+    document.addEventListener('visibilitychange', gorunur)
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      document.removeEventListener('visibilitychange', gorunur)
+    }
   }, [])
 
   if (frames.length === 0) return null
