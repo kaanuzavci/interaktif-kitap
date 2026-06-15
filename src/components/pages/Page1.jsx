@@ -38,23 +38,17 @@ const YURUYUS_ROTASI = [
    - "Yerinde sayıyor" (bacaklar hızlı, az ilerliyor) -> FRAME_SURESI'ni artır
 
    Sol alttaki AYAR PANELİ ile ikisini canlı deneyebilirsin. Panel
-   şu durumlarda görünür:
-     - npm run dev (geliştirme) modunda, VEYA
-     - URL'nin sonuna ?ayar eklenince (canlı sitede tasarımcılar için)
-   Doğru hissi bulunca panelin altındaki değerleri buraya yaz -
-   kalıcı hale gelir.
+   şimdilik sitede her zaman görünür (tasarımcılar değerleri ayarlasın
+   diye). Doğru hissi bulunca panelin altındaki değerleri buraya yaz -
+   kalıcı hale gelir, sonra paneli kaldırırız.
 ---------------------------------------------------------------- */
 const HIZ = 2.5
 const FRAME_SURESI = 150
 
 /* Ayar paneli görünsün mü?
-   - import.meta.env.DEV : "npm run dev"de true, yayında false
-   - ?ayar               : canlı sitede paneli açmak için özel bayrak
-   Böylece normal ziyaretçi paneli görmez, sadece linke ?ayar ekleyen görür. */
-const AYAR_MODU =
-  import.meta.env.DEV ||
-  (typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).has('ayar'))
+   ŞİMDİLİK herkese açık (tasarımcılar değerleri ayarlayıp bana iletecek).
+   Değerler sabitlenince burayı "false" yapıp paneli gizleriz/kaldırırız. */
+const AYAR_MODU = true
 
 // İki durak arası yürüyüş süresi (saniye). Mesafeyi Pisagor'la
 // buluyoruz; bottom yüzdeleri yatayla aynı ölçeğe getirmek için
