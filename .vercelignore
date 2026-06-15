@@ -1,0 +1,10 @@
+# Vercel'e YÜKLENMEYECEK dosyalar (build sunucuda kaynaktan yapılır)
+node_modules/
+dist/
+.git/
+
+# Optimizasyon scriptinin aldığı orijinal görsel yedekleri (~50MB, gereksiz)
+asset-yedek/
+
+# Geliştirme scriptleri (çalışma zamanında gerekmez)
+scripts/
