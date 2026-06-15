@@ -118,10 +118,9 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
     dragRef.current = null
     if (!d) return
 
-    // Neredeyse hiç sürüklenmediyse = dokunuş: tam çevir
+    // Neredeyse hiç sürüklenmediyse = tek dokunuş: sayfa çevirme YOK, iptal et
     if (!d.hareket) {
       setFlip(null)
-      cevir(d.yon)
       return
     }
 
@@ -168,16 +167,33 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
 
       {/* ===== KİTABIN ORTALANDIĞI ALAN ===== */}
       <div className="absolute inset-0 flex items-center justify-center p-2">
-        {/* KAPAK (ciltli kenar) — sayfa alanını çevreleyen ince çerçeve */}
+        {/* KAPAK (ciltli kenar) — SADE, düz, yuvarlak köşeli kahverengi
+            çerçeve. Yanlarda sayfa yığını / üstte kubbe YOK; yalnızca 16:9
+            sahneyi çevreleyen ahşap çerçeve. */}
         <div
-          className="relative rounded-[14px] bg-gradient-to-b from-[#7a4a2c] to-[#5e3720] shadow-[0_26px_50px_rgba(50,28,12,0.55)]"
-          style={{ width: 'min(94vw, calc(90dvh * 16 / 9))', padding: 'clamp(5px, 1vmin, 12px)' }}
+          className="relative"
+          style={{
+            width: 'min(94vw, calc(90dvh * 16 / 9))',
+            padding: 'clamp(8px, 1.5vmin, 16px)',
+            borderRadius: 'clamp(14px, 2.4vmin, 28px)',
+            background: 'linear-gradient(135deg, #8b5e3c 0%, #7a4a2c 30%, #5e3720 70%, #4a2a18 100%)',
+            boxShadow:
+              '0 26px 50px rgba(50,28,12,0.55), ' +
+              '0 4px 12px rgba(0,0,0,0.3), ' +
+              'inset 0 2px 2px rgba(255,255,255,0.16), ' +
+              'inset 0 -1px 0 rgba(0,0,0,0.2)',
+          }}
         >
           {/* SAYFA ALANI — tam 16:9 (koordinat hizası bozulmaz) */}
           <div
             ref={spreadRef}
-            className="relative overflow-hidden rounded-[6px] bg-krem"
-            style={{ width: '100%', aspectRatio: '16 / 9', perspective: '2200px' }}
+            className="relative overflow-hidden bg-krem"
+            style={{
+              width: '100%',
+              aspectRatio: '16 / 9',
+              perspective: '2200px',
+              borderRadius: 'clamp(8px, 1.6vmin, 16px)',
+            }}
           >
             {/* ---------- İÇERİK: idle (canlı) VEYA çevirme (statik+yaprak) ---------- */}
             {!flip ? (
@@ -205,7 +221,7 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
                     onPointerDown={(e) => surukleBasla(e, 'ileri')}
                     className="absolute bottom-0 right-0 top-0 z-20 w-[16%] cursor-grab touch-none active:cursor-grabbing"
                     role="button"
-                    aria-label="Sonraki sayfa (sürükle veya dokun)"
+                    aria-label="Sonraki sayfa (sürükle)"
                   >
                     {/* Sağ alt köşede kıvrılan sayfa ipucu */}
                     <div
@@ -225,7 +241,7 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
                     onPointerDown={(e) => surukleBasla(e, 'geri')}
                     className="absolute bottom-0 left-0 top-0 z-20 w-[16%] cursor-grab touch-none active:cursor-grabbing"
                     role="button"
-                    aria-label="Önceki sayfa (sürükle veya dokun)"
+                    aria-label="Önceki sayfa (sürükle)"
                   />
                 )}
               </>
@@ -299,13 +315,13 @@ function CevirmeKatmani({ sahneler, sahneIndex, flip }) {
   const yaprakGecis = gecisli && !suruyor ? `transform ${CEVIRME_SURE}ms cubic-bezier(0.4,0,0.2,1)` : 'none'
 
   return (
-    <div className="absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
+    <div className="absolute inset-0" style={{ perspective: '2200px' }}>
       {/* Sol sabit sayfa */}
-      <div className="absolute bottom-0 left-0 top-0 w-1/2 overflow-hidden">
+      <div className="absolute bottom-0 left-0 top-0 w-1/2 overflow-hidden" style={{ isolation: 'isolate' }}>
         <Yari sahne={solSabit} yari="sol" />
       </div>
       {/* Sağ sabit sayfa */}
-      <div className="absolute bottom-0 right-0 top-0 w-1/2 overflow-hidden">
+      <div className="absolute bottom-0 right-0 top-0 w-1/2 overflow-hidden" style={{ isolation: 'isolate' }}>
         <Yari sahne={sagSabit} yari="sag" />
         {/* İleri çevirirken: yaprağın altındaki sayfaya düşen gölge */}
         {ileri && (
@@ -375,20 +391,20 @@ function CevirmeKatmani({ sahneler, sahneIndex, flip }) {
 function KavisGolge() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
-      {/* Sayfa kıvrımı: her sayfa cilde doğru hafif gölgelenir */}
+      {/* Sayfa kıvrımı: çok hafif — renkleri soldurmamalı */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(to right, rgba(0,0,0,0.16) 0%, transparent 10%, transparent 90%, rgba(0,0,0,0.16) 100%), ' +
-            'linear-gradient(to right, transparent 42%, rgba(0,0,0,0.16) 49.5%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.16) 50.5%, transparent 58%)',
+            'linear-gradient(to right, rgba(0,0,0,0.06) 0%, transparent 6%, transparent 94%, rgba(0,0,0,0.06) 100%), ' +
+            'linear-gradient(to right, transparent 45%, rgba(0,0,0,0.08) 49.5%, rgba(0,0,0,0.03) 50%, rgba(0,0,0,0.08) 50.5%, transparent 55%)',
         }}
       />
       {/* Cilt (spine) orta çizgisi + ince ışık */}
-      <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-black/25" />
-      <div className="absolute inset-y-0 left-1/2 w-[6px] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-      {/* Dış köşe vinyeti */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_68%,rgba(0,0,0,0.16))]" />
+      <div className="absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-black/15" />
+      <div className="absolute inset-y-0 left-1/2 w-[6px] -translate-x-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      {/* Dış köşe vinyeti — çok hafif, renkleri bozmaz */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_75%,rgba(0,0,0,0.06))]" />
     </div>
   )
 }

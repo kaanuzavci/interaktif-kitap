@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import IsilYurume from '../../characters/IsilYurume.jsx'
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
 
-// Ön plan çimeni (Işıl'ın ARKASINDA kalır; kütük bunun ÖNÜNDE durur)
+// Ön plan çimeni (tavşan/kütüğün ÖNÜNDE, Işıl'ın ARKASINDA kalır)
 import cimen from '../../../assets/backgrounds/cimen.png'
 
 /* ===============================================================
@@ -13,8 +13,8 @@ import cimen from '../../../assets/backgrounds/cimen.png'
    "arka_plan.jpg" olarak çiziyor, biz üstüne ekliyoruz):
 
      arka_plan.jpg  (Sahne çiziyor)           — en altta
-     cimen.png      (bu dosya)                — ön çimen, IŞIL'IN ARKASI
-     tavşan+kütük   (TiklamaliSprite)         — çimenin ÖNÜNDE, tıklanınca zıplar
+     tavşan+kütük   (TiklamaliSprite)         — çimenin ARKASINDA, tıklanınca zıplar
+     cimen.png      (bu dosya)                — ön çimen, kütüğün ÖNÜ, IŞIL'IN ARKASI
      uğurböceği     (TiklamaliSprite)         — papatya üstünde, tıklanınca hoplar
      Işıl           (yürür)                   — çimenin önünde
      Canım (çiçek)  — dokununca Işıl yürür    — en üstte
@@ -77,9 +77,11 @@ function segmentSuresi(hedefIndex, hiz) {
 const TAVSAN_VARSAYILAN = { olcek: 0.39, x: -8, y: 41.5 }
 const UGUR_VARSAYILAN = { olcek: 0.18, x: 76.1, y: 51.3 }
 
-// Tıklama alanları (özneyi rahatça kapsar; çocuk parmağı için geniş)
-const TAVSAN_HOTSPOT = { left: '3%', top: '38%', width: '26%', height: '38%' }
-const UGUR_HOTSPOT = { left: '78%', top: '52%', width: '17%', height: '24%' }
+// Tıklama alanları — sprite konumlarına göre hizalı
+// Tavşan kütüğü: sprite olcek=0.39, x=-8%, y=41.5% → kütük sahnenin sol-altında
+const TAVSAN_HOTSPOT = { left: '1%', top: '45%', width: '16%', height: '32%' }
+// Uğurböceği: sprite olcek=0.18, x=76.1%, y=51.3% → sağ alt papatyanın üstünde
+const UGUR_HOTSPOT = { left: '80%', top: '56%', width: '12%', height: '16%' }
 
 // Ayar paneli yalnızca URL'de ?ayar varsa görünür (tasarımcılar için)
 const AYAR_MODU =
@@ -87,17 +89,27 @@ const AYAR_MODU =
   new URLSearchParams(window.location.search).has('ayar')
 
 function SevgiSahne1({ canli = true }) {
-  // --- IŞIL YÜRÜYÜŞÜ (mevcut mantık, dokunulmadı) ---
+  // --- IŞIL YÜRÜYÜŞÜ ---
   const [hedefIndex, setHedefIndex] = useState(0)
   const [yuruyor, setYuruyor] = useState(false)
   const [hiz, setHiz] = useState(HIZ)
   const [frameSuresi, setFrameSuresi] = useState(FRAME_SURESI)
+  const basaSarTimeout = useRef(null)
 
   // --- SPRITE YERLEŞTİRME (ayar panelinden canlı değiştirilebilir) ---
   const [tavsan, setTavsan] = useState(TAVSAN_VARSAYILAN)
   const [ugur, setUgur] = useState(UGUR_VARSAYILAN)
 
+  // Timeout temizliği
+  useEffect(() => {
+    return () => {
+      if (basaSarTimeout.current) clearTimeout(basaSarTimeout.current)
+    }
+  }, [])
+
   const basaSar = () => {
+    if (basaSarTimeout.current) clearTimeout(basaSarTimeout.current)
+    basaSarTimeout.current = null
     setYuruyor(false)
     setHedefIndex(0)
   }
@@ -111,29 +123,37 @@ function SevgiSahne1({ canli = true }) {
     if (hedefIndex < YURUYUS_ROTASI.length - 1) {
       setHedefIndex(hedefIndex + 1)
     } else {
+      // Yürüyüş bitti — 2 saniye bekle, sonra başa sar (tekrar tıklanabilir)
       setYuruyor(false)
+      if (basaSarTimeout.current) clearTimeout(basaSarTimeout.current)
+      basaSarTimeout.current = setTimeout(() => {
+        setHedefIndex(0)
+        basaSarTimeout.current = null
+      }, 2000)
     }
   }
 
   return (
     <div className="absolute inset-0">
-      {/* ===== ÖN ÇİMEN (Işıl'ın ARKASI, kütüğün ÖNÜ değil — en altta) ===== */}
+      {/* ===== ÖN ÇİMEN (kütüğün ÖNÜNDE, Işıl'ın ARKASINDA) ===== */}
       <img
         src={cimen}
         alt=""
         draggable={false}
         className="pointer-events-none absolute inset-0 h-full w-full select-none"
-        style={{ zIndex: 1 }}
+        style={{ zIndex: 7 }}
       />
 
-      {/* ===== TAVŞAN + KÜTÜK (çimenin önünde; tıklayınca zıplar) ===== */}
+      {/* ===== TAVŞAN + KÜTÜK (çimenin arkasında; tıklayınca zıplar) ===== */}
       <TiklamaliSprite
         frames={tavsanKareleri}
         olcek={tavsan.olcek}
         x={tavsan.x}
         y={tavsan.y}
-        frameSuresiMs={70}
+        frameSuresiMs={90}
         tekrar={1}
+        bekleKare={5}
+        beklemeSuresiMs={600}
         hotspot={TAVSAN_HOTSPOT}
         etiket="Kütüğe dokun, tavşan çıksın"
         canli={canli}
