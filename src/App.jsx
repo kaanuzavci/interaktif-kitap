@@ -1,77 +1,93 @@
 import { useState } from 'react'
 import { Howler } from 'howler'
+import LoadingScreen from './components/screens/LoadingScreen.jsx'
 import HomeScreen from './components/screens/HomeScreen.jsx'
-import Book from './components/Book.jsx'
+import BookReader from './components/book/BookReader.jsx'
+import useHareketAzalt from './hooks/useHareketAzalt.js'
 
 /**
  * App: Uygulamanın en üst bileşeni.
  *
  * Görevleri:
- *  1. EKRAN YÖNETİMİ: Hangi ekran görünüyor? "home" (giriş) / "book" (kitap)
- *  2. SES DURUMU: Açık/kapalı. İki ekran da aynı butonu paylaştığı için
- *     ses state'i burada tutuluyor (yoksa ekranlar arası tutarsız olurdu).
- *  3. Telefon dik tutulduğunda "cihazını çevir" uyarısı göstermek.
+ *  1. EKRAN YÖNETİMİ (uiDurumu): üç katman arasında geçiş
+ *       'loading' -> 'home' -> 'book' -> 'home' ...
+ *  2. PAYLAŞILAN AYARLAR: ses, müzik, "hareketleri azalt".
+ *     Bu üç değer hem giriş ekranında hem kitapta geçerli olduğu için
+ *     en üstte (burada) tutulur; yoksa ekranlar arası tutarsız olurdu.
+ *  3. Telefon dik tutulduğunda "cihazını çevir" uyarısı (yatay zorunlu).
  *
- * React Router YOK; basit bir useState ile ekran geçişi yapıyoruz.
+ * React Router YOK; basit useState ile yönetiyoruz (plan gereği).
  */
 function App() {
-  // Hangi ekrandayız? "home" = giriş ekranı, "book" = kitap okuma
-  const [screen, setScreen] = useState('home')
+  // Hangi katmandayız? 'loading' = açılış, 'home' = kitaplık, 'book' = okuyucu
+  const [uiDurumu, setUiDurumu] = useState('loading')
 
-  // Hangi bölüm seçildi? (şimdilik sadece "sevgi" var; ileride bu
-  // değere göre Book farklı bölüm yükleyebilir)
-  const [aktifBolum, setAktifBolum] = useState(null)
+  // Açılan kitabın id'si ('sevgi' vb.) — 'book' durumunda kullanılır
+  const [aktifKitapId, setAktifKitapId] = useState(null)
 
   // Ses açık mı? Howler.mute() TÜM sesleri tek seferde susturur.
   const [soundOn, setSoundOn] = useState(true)
+  // Arka plan müziği (şimdilik placeholder; ileride çalınacak)
+  const [muzik, setMuzik] = useState(true)
+  // Uygulama içi "hareketleri azalt" anahtarı
+  const [hareketAzaltAyar, setHareketAzaltAyar] = useState(false)
 
-  // Ses butonuna basılınca: durumu tersine çevir ve Howler'a bildir
+  // OS düzeyindeki "reduce motion" tercihi
+  const osHareketAzalt = useHareketAzalt()
+  // Etkin değer: kullanıcı anahtarı VEYA OS tercihi
+  const hareketAzalt = hareketAzaltAyar || osHareketAzalt
+
+  // Ses aç/kapat
   const toggleSound = () => {
     setSoundOn((onceki) => {
-      Howler.mute(onceki) // ses açıksa sustur, kapalıysa aç
+      Howler.mute(onceki) // açıksa sustur, kapalıysa aç
       return !onceki
     })
   }
 
-  // Giriş ekranında bir bölüm kartına tıklanınca: kitabı aç
-  const bolumSec = (bolumId) => {
-    setAktifBolum(bolumId)
-    setScreen('book')
+  // --- KATMAN GEÇİŞLERİ ---
+  const yuklemeBitti = () => setUiDurumu('home') // loading -> home
+  const kitapSec = (kitapId) => {
+    setAktifKitapId(kitapId)
+    setUiDurumu('book') // home -> book
   }
-
-  // Kitaptan ana menüye dönüş
-  const anaMenuyeDon = () => setScreen('home')
+  const kitapligaDon = () => setUiDurumu('home') // book -> home
 
   return (
-    <div className="h-dvh w-dvw">
+    // hareketAzalt açıksa ".hareketsiz" tüm CSS animasyon/geçişlerini durdurur
+    <div className={`h-dvh w-dvw ${hareketAzalt ? 'hareketsiz' : ''}`}>
       {/* ----- DİKEY MOD UYARISI -----
-          ".dikey-uyari" sınıfı index.css'te tanımlı:
-          sadece telefon dik tutulunca görünür hale gelir. */}
-      <div className="dikey-uyari fixed inset-0 z-50 flex-col items-center justify-center gap-6 bg-gece text-center">
-        {/* Dönen telefon emojisi */}
+          Sadece telefon dik tutulunca görünür (.dikey-uyari, index.css). */}
+      <div className="dikey-uyari fixed inset-0 z-[60] flex-col items-center justify-center gap-6 bg-gece text-center">
         <div className="animate-sallan text-7xl">📱</div>
         <p className="px-8 font-baslik text-3xl font-bold text-krem">
           Cihazını yan çevir!
         </p>
-        <p className="px-8 text-lg text-gokyuzu">
-          Kitabımız yatay modda okunuyor 🌸
-        </p>
+        <p className="px-8 text-lg text-gokyuzu">Kitabımız yatay modda okunuyor 🌸</p>
       </div>
 
-      {/* ----- AKTİF EKRAN -----
-          screen state'ine göre giriş ekranı veya kitap gösterilir. */}
-      {screen === 'home' ? (
+      {/* ----- AKTİF KATMAN ----- */}
+      {uiDurumu === 'loading' && <LoadingScreen onReady={yuklemeBitti} hareketAzalt={hareketAzalt} />}
+
+      {uiDurumu === 'home' && (
         <HomeScreen
-          onSelectBolum={bolumSec}
+          onSelectKitap={kitapSec}
           soundOn={soundOn}
           onToggleSound={toggleSound}
+          muzik={muzik}
+          onToggleMuzik={() => setMuzik((o) => !o)}
+          hareketAzalt={hareketAzaltAyar}
+          onToggleHareket={() => setHareketAzaltAyar((o) => !o)}
         />
-      ) : (
-        <Book
-          bolum={aktifBolum}
+      )}
+
+      {uiDurumu === 'book' && (
+        <BookReader
+          kitapId={aktifKitapId}
           soundOn={soundOn}
           onToggleSound={toggleSound}
-          onHome={anaMenuyeDon}
+          onHome={kitapligaDon}
+          hareketAzalt={hareketAzalt}
         />
       )}
     </div>

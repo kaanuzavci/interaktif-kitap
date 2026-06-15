@@ -28,9 +28,9 @@ const frames = Object.keys(frameModulleri)
   .map((dosyaYolu) => frameModulleri[dosyaYolu])
 
 /* Her pozun ekranda kalma süresi (ms) - VARSAYILAN değer.
-   Sayfa isterse frameSuresiMs prop'uyla farklı bir değer verebilir
-   (Page1'deki ayar paneli bunu kullanıyor).
-   (Yürüme HIZI ayrı bir şey - o Page1.jsx'teki HIZ sabitinde.) */
+   Sahne isterse frameSuresiMs prop'uyla farklı bir değer verebilir
+   (SevgiSahne1.jsx'teki ayar paneli bunu kullanıyor).
+   (Yürüme HIZI ayrı bir şey - o SevgiSahne1.jsx'teki HIZ sabitinde.) */
 const FRAME_SURESI_MS = 150
 
 /**

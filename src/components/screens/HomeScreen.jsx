@@ -1,50 +1,21 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { KITAPLAR } from '../../data/kitaplar.js'
+import KitapKapak from '../ui/KitapKapak.jsx'
 import Modal from '../ui/Modal.jsx'
 import Toggle from '../ui/Toggle.jsx'
 import IconButton from '../ui/IconButton.jsx'
 
 /* ---------------------------------------------------------------
-   BÖLÜM LİSTESİ
-
-   Her bölüm bir obje. Yeni bölüm eklemek için bu diziye satır eklemen
-   yeterli - kartlar otomatik oluşur.
-   - id      : benzersiz kimlik (App'e hangi bölümün açılacağını bildirir)
-   - ad      : kart başlığı
-   - ikon    : temsili emoji
-   - teaser  : kartın altındaki kısa tanıtım
-   - renk    : kart üst şeridi/aksan rengi (index.css @theme renkleri)
-   - durum   : "aktif" -> tıklanabilir / "yakinda" -> kilitli, soluk
----------------------------------------------------------------- */
-const BOLUMLER = [
-  { id: 'sevgi',     ad: 'Sevgi',     ikon: '💝', teaser: 'Işıl ve Canım',      renk: 'seker',  durum: 'aktif' },
-  { id: 'durustluk', ad: 'Dürüstlük', ikon: '🌟', teaser: 'Doğruyu söylemek',   renk: 'gunes',  durum: 'yakinda' },
-  { id: 'paylasmak', ad: 'Paylaşmak', ikon: '🤝', teaser: 'Birlikte daha güzel', renk: 'cimen',  durum: 'yakinda' },
-  { id: 'saygi',     ad: 'Saygı',     ikon: '🌸', teaser: 'Herkese nazik ol',    renk: 'gokyuzu', durum: 'yakinda' },
-]
-
-/* Renk id'sini Tailwind arka plan sınıfına çeviren küçük yardımcı.
-   (Tailwind, string birleştirmeyle üretilen sınıfları derlemede
-   göremediği için sınıfları açıkça yazıyoruz.) */
-const RENK_BG = {
-  seker: 'bg-seker',
-  gunes: 'bg-gunes',
-  cimen: 'bg-cimen',
-  gokyuzu: 'bg-gokyuzu',
-}
-
-/* ---------------------------------------------------------------
-   YASAL METİNLER (placeholder)
-   Canlı yayında gerçek metinlerle değiştirilecek. Footer'daki
-   linkler bu içerikleri modal içinde açar.
+   YASAL METİNLER (placeholder) — yayın öncesi gerçekleriyle değişecek.
 ---------------------------------------------------------------- */
 const YASAL_METINLER = {
   gizlilik: {
     baslik: 'Gizlilik Politikası',
     ikon: '🔒',
     metin:
-      'Çocuklarımızın güvenliği önceliğimizdir. Uygulama, kişisel veri toplamaz; ' +
-      'ilerleme bilgileri yalnızca cihazda saklanır. (Bu bir taslak metindir, ' +
-      'yayın öncesi hukuki metinle güncellenecektir.)',
+      'Çocuklarımızın güvenliği önceliğimizdir. Uygulama kişisel veri toplamaz; ' +
+      'ilerleme bilgileri yalnızca cihazda saklanır. (Taslak metin; yayın öncesi ' +
+      'hukuki metinle güncellenecektir.)',
   },
   kullanim: {
     baslik: 'Kullanım Koşulları',
@@ -58,223 +29,245 @@ const YASAL_METINLER = {
     ikon: '✉️',
     metin:
       'Görüş ve önerileriniz için bize ulaşın: iletisim@isililedegerler.com ' +
-      '(Örnek adres - yayın öncesi güncellenecek.)',
+      '(Örnek adres — yayın öncesi güncellenecek.)',
   },
 }
 
-/**
- * HomeScreen: Giriş ekranı / ana menü.
- *
- * Bölümler:
- *  1. Çok katmanlı CSS arka plan (gökyüzü, güneş+ışınlar, bulutlar,
- *     tepeler, çiçekler, kelebekler) - masalsı diorama hissi
- *  2. Animasyonlu logo/başlık
- *  3. Bölüm seçim kartları (açılışta sırayla "pop" eder)
- *  4. Ayarlar penceresi (dişli buton -> modal)
- *  5. Footer: telif / yasal linkler / sürüm
- *
- * Props:
- *  - onSelectBolum : bölüm kartına tıklanınca id ile çağrılır
- *  - soundOn       : ses açık mı? (App'ten)
- *  - onToggleSound : ses aç/kapat (App'ten)
- */
-function HomeScreen({ onSelectBolum, soundOn, onToggleSound }) {
-  // Ayarlar penceresi açık mı?
-  const [ayarlarAcik, setAyarlarAcik] = useState(false)
+// Süzülen ışık zerrecikleri (rastgele konum/gecikme) — imza atmosferin parçası
+const MOTELER = [
+  { left: '12%', bottom: '22%', boyut: 8, gecikme: '0s' },
+  { left: '28%', bottom: '30%', boyut: 5, gecikme: '1.5s' },
+  { left: '46%', bottom: '18%', boyut: 7, gecikme: '3s' },
+  { left: '63%', bottom: '34%', boyut: 5, gecikme: '0.8s' },
+  { left: '78%', bottom: '24%', boyut: 9, gecikme: '2.2s' },
+  { left: '88%', bottom: '30%', boyut: 6, gecikme: '4s' },
+]
 
-  // Yasal metin penceresi: null veya "gizlilik"/"kullanim"/"iletisim"
+/**
+ * HomeScreen: Giriş ekranı — "büyülü okuma köşesi" kitaplığı.
+ *
+ * Katmanlar:
+ *  1. Sıcak (altın saat) atmosfer: degrade, ışık havuzu, zerrecikler
+ *  2. İMZA ÖĞE: yukarıdan sarkan, nazikçe sallanan fener
+ *  3. Ahşap raf üzerinde 4 kitap kapağı (1 aktif, 3 "yakında")
+ *  4. Kitap seçim animasyonu: seçilen kitap rafta kalkıp ekran ortasına
+ *     süzülür, büyür ve KAPAĞI AÇILIR; sonra okuyucuya geçilir
+ *  5. Ayarlar (dişli → modal) + yasal footer
+ *
+ * Props (App'ten):
+ *  - onSelectKitap : kitap açılma animasyonu bitince id ile çağrılır
+ *  - soundOn / onToggleSound
+ *  - muzik / onToggleMuzik
+ *  - hareketAzalt / onToggleHareket  (uygulama içi anahtar)
+ */
+function HomeScreen({
+  onSelectKitap,
+  soundOn,
+  onToggleSound,
+  muzik,
+  onToggleMuzik,
+  hareketAzalt,
+  onToggleHareket,
+}) {
+  const [ayarlarAcik, setAyarlarAcik] = useState(false)
   const [yasalAcik, setYasalAcik] = useState(null)
 
-  // Ayar durumları (ses App'ten; bunlar yerel)
-  const [muzik, setMuzik] = useState(true)       // arka plan müziği (ileride)
-  const [hareketAzalt, setHareketAzalt] = useState(false) // animasyonları durdur
+  // Seçim animasyonu durumu:
+  // acilan = { id, transform } (merkeze süzülen kitap), evre = 'merkeze' | 'aciliyor'
+  const [acilan, setAcilan] = useState(null)
+  const [evre, setEvre] = useState(null)
+  // Kilitli kitaba dokununca kısa sallanan kitabın id'si
+  const [sallananId, setSallananId] = useState(null)
+
+  // Her kitap kapağının dış sarmalayıcısına ref (merkeze taşımayı ölçmek için)
+  const kapakRefleri = useRef({})
+
+  // --- KİTAP SEÇİMİ ---
+  const kitabaTiklandi = (kitap) => {
+    if (acilan) return // zaten bir kitap açılıyor
+
+    // Kilitli kitap: aç değil, kısa "çok yakında" geri bildirimi ver
+    if (kitap.durum !== 'aktif') {
+      setSallananId(kitap.id)
+      setTimeout(() => setSallananId(null), 600)
+      return
+    }
+
+    // Aktif kitap: rafta kalkıp ekran ortasına süzülecek.
+    // Kapağın mevcut konumunu ölç → viewport merkezine taşıma vektörünü hesapla.
+    const el = kapakRefleri.current[kitap.id]
+    let transform = 'translate(0,0) scale(1.6)'
+    if (el) {
+      const r = el.getBoundingClientRect()
+      const merkezX = window.innerWidth / 2
+      const merkezY = window.innerHeight / 2
+      const dx = merkezX - (r.left + r.width / 2)
+      const dy = merkezY - (r.top + r.height / 2)
+      // Hedef yükseklik ~ ekranın %64'ü → ölçek
+      const olcek = Math.min(2.4, Math.max(1.3, (window.innerHeight * 0.64) / r.height))
+      transform = `translate(${dx}px, ${dy}px) scale(${olcek})`
+    }
+
+    setAcilan({ id: kitap.id, transform })
+    setEvre('merkeze')
+
+    // 1) ~680ms: kitap ortaya geldi → kapağı aç
+    setTimeout(() => setEvre('aciliyor'), 680)
+    // 2) ~1430ms: kapak açıldı, ışık doldu → okuyucuya geç
+    setTimeout(() => onSelectKitap?.(kitap.id), 1430)
+  }
 
   return (
-    // hareketAzalt açıksa ".hareketsiz" sınıfı tüm animasyonları durdurur
-    <div className={`relative h-full w-full overflow-hidden ${hareketAzalt ? 'hareketsiz' : ''}`}>
-
+    <div className="relative h-full w-full overflow-hidden">
       {/* ============================================================
-          ARKA PLAN KATMANLARI (tamamen CSS, z-0)
+          ATMOSFER (z-0) — sıcak altın saat okuma köşesi
       ============================================================ */}
+      {/* Degrade: üstte yumuşak gökyüzü, altta sıcak krem/şeftali */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#fbe7c6] via-[#fde9d9] to-[#f7d9c4]" />
+      {/* Geniş, yumuşak sıcak ışık havuzu (rafın arkası) */}
+      <div className="absolute left-1/2 top-[58%] h-[80%] w-[85%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gunes/25 blur-3xl" />
+      {/* Üst köşelerde hafif koyulaşma (vinyet → derinlik) */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(90,74,120,0.18))]" />
 
-      {/* Degrade gökyüzü */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gokyuzu via-[#e8f4ff] to-krem" />
-
-      {/* Merkeze yumuşak ışık - kartların arkasını öne çıkarır */}
-      <div className="absolute left-1/2 top-1/2 h-[80%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40 blur-3xl" />
-
-      {/* Güneş + dönen ışınlar (sağ üst) */}
-      <div className="absolute -right-12 -top-12 h-64 w-64 md:h-80 md:w-80">
-        <div
-          className="animate-isin absolute inset-0 rounded-full opacity-25"
+      {/* Süzülen ışık zerrecikleri */}
+      {MOTELER.map((m, i) => (
+        <span
+          key={i}
+          className="animate-mote pointer-events-none absolute rounded-full bg-white/80 blur-[1px]"
           style={{
-            background:
-              'repeating-conic-gradient(from 0deg, rgba(255,209,102,0.6) 0deg 7deg, transparent 7deg 20deg)',
+            left: m.left,
+            bottom: m.bottom,
+            width: m.boyut,
+            height: m.boyut,
+            animationDelay: m.gecikme,
+            boxShadow: '0 0 8px rgba(255,221,150,0.9)',
           }}
         />
-        <div className="absolute inset-10 rounded-full bg-gunes/40 blur-2xl" />
-        <div className="absolute inset-16 rounded-full bg-gunes shadow-[0_0_50px_rgba(255,209,102,0.7)]" />
-      </div>
-
-      {/* Süzülen bulutlar (farklı derinlik = farklı boyut/opaklık/hız) */}
-      <div className="animate-yuzen absolute left-[8%] top-[12%] h-9 w-32 rounded-full bg-white/85 md:h-12 md:w-44" />
-      <div
-        className="animate-yuzen absolute left-[60%] top-[8%] h-7 w-24 rounded-full bg-white/70 md:h-10 md:w-36"
-        style={{ animationDelay: '2s', animationDuration: '8s' }}
-      />
-      <div
-        className="animate-yuzen absolute left-[35%] top-[18%] h-6 w-20 rounded-full bg-white/55 md:h-8 md:w-28"
-        style={{ animationDelay: '3.5s', animationDuration: '7s' }}
-      />
-
-      {/* Uzaktaki ağaç siluetleri (basit yuvarlak taç + gövde) */}
-      <div className="absolute bottom-[14%] left-[4%] flex flex-col items-center opacity-90">
-        <div className="h-20 w-20 rounded-full bg-cimen brightness-90 md:h-28 md:w-28" />
-        <div className="-mt-2 h-10 w-4 rounded-b-lg bg-[#9c6b4a] md:h-14 md:w-5" />
-      </div>
-      <div className="absolute bottom-[15%] right-[5%] flex flex-col items-center opacity-90">
-        <div className="h-16 w-16 rounded-full bg-cimen brightness-95 md:h-24 md:w-24" />
-        <div className="-mt-2 h-9 w-3.5 rounded-b-lg bg-[#9c6b4a] md:h-12 md:w-5" />
-      </div>
-
-      {/* Katmanlı tepeler */}
-      <div className="absolute -bottom-[28%] -left-[12%] h-[42%] w-[80%] rounded-[50%] bg-cimen/80 brightness-105" />
-      <div className="absolute -bottom-[30%] -right-[14%] h-[44%] w-[82%] rounded-[50%] bg-cimen brightness-95" />
-      {/* En öndeki çimen şeridi */}
-      <div className="absolute bottom-0 left-0 h-[12%] w-full bg-gradient-to-t from-cimen to-cimen/70" />
-
-      {/* Çiçek ve canlılar - alt şeride serpiştirilmiş (emoji, hafif animasyonlu) */}
-      <div className="animate-sallan absolute bottom-[1%] left-[6%] text-3xl md:text-4xl">🌷</div>
-      <div className="animate-sallan absolute bottom-[2%] left-[18%] text-2xl md:text-3xl" style={{ animationDelay: '0.7s' }}>🌼</div>
-      <div className="animate-sallan absolute bottom-[1%] left-[78%] text-3xl md:text-4xl" style={{ animationDelay: '1.1s' }}>🌷</div>
-      <div className="animate-sallan absolute bottom-[2%] left-[90%] text-2xl md:text-3xl" style={{ animationDelay: '0.4s' }}>🌼</div>
-      <div className="animate-sallan absolute bottom-[1%] left-[45%] text-2xl md:text-3xl" style={{ animationDelay: '1.4s' }}>🍄</div>
-
-      {/* Kelebekler (süzülme + kanat çırpma birlikte) */}
-      <div className="animate-yuzen absolute left-[22%] top-[40%]" style={{ animationDuration: '9s' }}>
-        <span className="animate-kanat block text-2xl md:text-3xl">🦋</span>
-      </div>
-      <div className="animate-yuzen absolute right-[24%] top-[34%]" style={{ animationDuration: '7s', animationDelay: '1s' }}>
-        <span className="animate-kanat block text-xl md:text-2xl" style={{ animationDelay: '0.5s' }}>🐝</span>
-      </div>
-
-      {/* Uçuşan kalpler + parıltılar */}
-      <div className="animate-kalp absolute left-[14%] top-[52%] text-2xl md:text-3xl">💗</div>
-      <div className="animate-parilti absolute right-[16%] top-[48%] text-xl md:text-2xl">✨</div>
-      <div className="animate-parilti absolute left-[48%] top-[26%] text-lg md:text-xl" style={{ animationDelay: '1s' }}>✨</div>
+      ))}
 
       {/* ============================================================
-          İÇERİK (z-10)
+          İMZA ÖĞE: yukarıdan sarkan, sallanan fener
       ============================================================ */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-between px-4 py-4 md:px-8 md:py-6">
-
-        {/* ----- BAŞLIK / LOGO ----- */}
-        <header className="animate-belir-yukari flex flex-col items-center pt-2 md:pt-3">
-          <div className="relative flex items-center gap-3 rounded-full border-4 border-white bg-krem/90 px-7 py-2 shadow-[0_8px_0_rgba(90,74,120,0.18)] backdrop-blur-sm md:px-10 md:py-3">
-            {/* Sol parıltı */}
-            <span className="animate-parilti absolute -left-3 -top-3 text-2xl md:text-3xl">✨</span>
-
-            <h1 className="font-baslik text-3xl font-extrabold tracking-tight text-gece md:text-5xl">
-              Işıl ile Değerler
-            </h1>
-            {/* Atan kalp */}
-            <span className="animate-kalp text-3xl md:text-5xl">💖</span>
-
-            {/* Sağ parıltı */}
-            <span className="animate-parilti absolute -bottom-3 -right-2 text-xl md:text-2xl" style={{ animationDelay: '0.8s' }}>✨</span>
+      <div className="animate-fener-salla absolute left-1/2 top-0 z-10 origin-top -translate-x-1/2">
+        {/* Askı ipi */}
+        <div className="mx-auto w-px bg-gece/40" style={{ height: 'clamp(28px, 9vh, 80px)' }} />
+        {/* Fener gövdesi */}
+        <div className="relative -mt-px flex flex-col items-center">
+          <div className="h-1.5 w-7 rounded-t bg-gece/70" />
+          <div className="relative flex h-12 w-9 items-center justify-center rounded-xl border-2 border-gece/50 bg-gradient-to-b from-gunes to-[#f5b94a] shadow-[0_0_28px_rgba(255,209,102,0.85)] md:h-14 md:w-11">
+            <span className="animate-parilti text-lg md:text-xl">🔆</span>
           </div>
+          <div className="h-1.5 w-4 rounded-b bg-gece/70" />
+        </div>
+        {/* Fenerin döktüğü sıcak ışık havuzu */}
+        <div className="absolute left-1/2 top-full -z-10 h-[55vh] w-[60vh] -translate-x-1/2 rounded-full bg-gunes/20 blur-3xl" />
+      </div>
 
-          {/* Alt başlık şeridi */}
-          <p className="mt-3 rounded-full bg-seker/90 px-5 py-1 font-baslik text-sm font-bold text-white shadow-md md:text-lg">
-            Bir bölüm seç ve maceraya başla! 🌈
+      {/* ============================================================
+          İÇERİK (z-20)
+      ============================================================ */}
+      <div className="relative z-20 flex h-full w-full flex-col items-center justify-between px-4 py-3 md:px-8 md:py-5">
+        {/* ----- BAŞLIK ----- */}
+        <header className="animate-belir-yukari flex flex-col items-center pt-6 md:pt-8">
+          <h1 className="font-baslik text-3xl font-extrabold tracking-tight text-gece drop-shadow-[2px_3px_0_rgba(255,255,255,0.7)] md:text-5xl">
+            Işıl ile Değerler
+          </h1>
+          <p className="mt-2 rounded-full bg-seker/90 px-5 py-1 font-baslik text-sm font-bold text-white shadow-md md:text-base">
+            Bir kitap seç, maceraya başla 🌈
           </p>
         </header>
 
-        {/* ----- BÖLÜM KARTLARI ----- */}
-        <main className="grid w-full max-w-5xl grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
-          {BOLUMLER.map((bolum, i) => {
-            const aktif = bolum.durum === 'aktif'
-            const renkBg = RENK_BG[bolum.renk]
-
-            return (
-              <button
-                key={bolum.id}
-                onClick={() => aktif && onSelectBolum(bolum.id)}
-                disabled={!aktif}
-                // animate-pop + artan gecikme: kartlar sırayla belirir
-                className={`
-                  animate-pop group relative flex flex-col items-center rounded-[1.75rem]
-                  border-4 border-white bg-white/85 px-3 pb-4 pt-8 backdrop-blur-sm
-                  shadow-[0_8px_0_rgba(90,74,120,0.15)]
-                  transition-all duration-200
-                  ${
-                    aktif
-                      ? 'cursor-pointer hover:-translate-y-1 hover:scale-105 active:scale-95'
-                      : 'cursor-not-allowed'
-                  }
-                `}
-                style={{ animationDelay: `${0.15 + i * 0.12}s` }}
-              >
-                {/* Üst renk şeridi */}
-                <span className={`absolute left-0 right-0 top-0 h-3 rounded-t-[1.4rem] ${renkBg}`} />
-
-                {/* İkon rozeti - kartın üst kenarına binmiş daire */}
-                <span
-                  className={`absolute -top-7 flex h-14 w-14 items-center justify-center rounded-full border-4 border-white text-2xl shadow-md md:h-16 md:w-16 md:text-3xl ${renkBg}`}
+        {/* ----- RAF + KİTAPLAR ----- */}
+        <main className="flex w-full max-w-4xl flex-col items-center">
+          {/* Kitap kapakları rafın üstünde dik durur */}
+          <div className="flex w-full items-end justify-center gap-3 px-2 md:gap-6">
+            {KITAPLAR.map((kitap, i) => {
+              const aktif = kitap.durum === 'aktif'
+              const aciliyor = acilan?.id === kitap.id
+              return (
+                <button
+                  key={kitap.id}
+                  ref={(el) => {
+                    kapakRefleri.current[kitap.id] = el
+                  }}
+                  onClick={() => kitabaTiklandi(kitap)}
+                  aria-label={aktif ? `${kitap.ad} kitabını aç` : `${kitap.ad} — yakında`}
+                  // Fly transform burada (dış düğmede); giriş animasyonu İÇTE
+                  // (yoksa pop-yukari animasyonunun transform'u fly'ı ezerdi).
+                  className={`relative w-1/4 max-w-[170px] outline-none transition-transform focus-visible:scale-105 ${
+                    aktif && !aciliyor ? 'cursor-pointer hover:-translate-y-2' : ''
+                  } ${aktif ? '' : 'cursor-not-allowed'}`}
+                  style={{
+                    transform: aciliyor ? acilan.transform : undefined,
+                    transitionDuration: aciliyor ? '650ms' : '200ms',
+                    transitionTimingFunction: 'cubic-bezier(0.22,1,0.36,1)',
+                    zIndex: aciliyor ? 50 : undefined,
+                  }}
                 >
-                  {bolum.ikon}
-                </span>
+                  <div className="animate-pop-yukari" style={{ animationDelay: `${0.15 + i * 0.12}s` }}>
+                    <KitapKapak
+                      kitap={kitap}
+                      aktif={aktif}
+                      aciliyor={aciliyor && evre === 'aciliyor'}
+                      sallaniyor={sallananId === kitap.id}
+                    />
+                  </div>
+                  {/* Kilitli kitaba dokununca çıkan baloncuk */}
+                  {sallananId === kitap.id && (
+                    <span className="animate-pop absolute -top-7 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-gece px-3 py-1 font-baslik text-xs font-bold text-white shadow-lg">
+                      Çok yakında! ✨
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
 
-                {/* Sıra numarası rozeti (sol üst) */}
-                <span className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-gece/80 font-baslik text-xs font-bold text-white">
-                  {i + 1}
-                </span>
-
-                {/* Başlık */}
-                <span className="mt-2 font-baslik text-lg font-extrabold text-gece md:text-2xl">
-                  {bolum.ad}
-                </span>
-
-                {/* Teaser */}
-                <span className="mt-0.5 text-center font-metin text-xs font-semibold text-gece/60 md:text-sm">
-                  {bolum.teaser}
-                </span>
-
-                {/* Aksiyon alanı: aktifse "Başla" pili, değilse "Yakında" */}
-                {aktif ? (
-                  <span className="animate-ziplama mt-3 rounded-full bg-seker px-4 py-1 font-baslik text-sm font-bold text-white shadow-md md:text-base">
-                    Başla ▶
-                  </span>
-                ) : (
-                  <span className="mt-3 rounded-full bg-gece/15 px-3 py-1 font-baslik text-xs font-bold text-gece/60 md:text-sm">
-                    🔒 Yakında
-                  </span>
-                )}
-
-                {/* Kilitli kartlarda hafif buzlu örtü (soluk görünüm) */}
-                {!aktif && (
-                  <span className="pointer-events-none absolute inset-0 rounded-[1.4rem] bg-white/40" />
-                )}
-              </button>
-            )
-          })}
+          {/* AHŞAP RAF — kitapların altında, hafif 3B kalınlık */}
+          <div className="animate-pop-yukari mt-1 w-full max-w-4xl" style={{ animationDelay: '0.1s' }}>
+            {/* Üst yüzey */}
+            <div className="h-3 w-full rounded-t-sm bg-gradient-to-b from-[#c98a52] to-[#a96f3e] shadow-inner" />
+            {/* Ön kenar (kalınlık) */}
+            <div className="h-4 w-full rounded-b-md bg-gradient-to-b from-[#90582f] to-[#73441f] shadow-[0_10px_18px_rgba(70,40,15,0.35)]" />
+            {/* İki küçük destek bağı */}
+            <div className="mx-auto flex w-[88%] justify-between">
+              <div className="h-6 w-3 rounded-b-md bg-[#73441f]" />
+              <div className="h-6 w-3 rounded-b-md bg-[#73441f]" />
+            </div>
+          </div>
         </main>
 
-        {/* ----- FOOTER (telif + yasal linkler + sürüm) ----- */}
-        <footer className="animate-belir-yukari flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-full bg-gece/85 px-5 py-2 text-center font-metin text-xs text-white shadow-lg backdrop-blur-sm md:text-sm" style={{ animationDelay: '0.5s' }}>
+        {/* ----- FOOTER ----- */}
+        <footer
+          className="animate-belir-yukari flex w-full max-w-4xl flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-full bg-gece/80 px-5 py-1.5 text-center font-metin text-xs text-white shadow-lg backdrop-blur-sm md:text-sm"
+          style={{ animationDelay: '0.5s' }}
+        >
           <span>© 2026 Işıl ile Değerler · Tüm hakları saklıdır</span>
-          <span className="hidden md:inline opacity-40">|</span>
+          <span className="hidden opacity-40 md:inline">|</span>
           <span className="flex gap-3">
             <button onClick={() => setYasalAcik('gizlilik')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">Gizlilik</button>
             <button onClick={() => setYasalAcik('kullanim')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">Kullanım</button>
             <button onClick={() => setYasalAcik('iletisim')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">İletişim</button>
           </span>
-          <span className="hidden md:inline opacity-40">|</span>
-          <span className="opacity-60">v0.1</span>
+          <span className="hidden opacity-40 md:inline">|</span>
+          <span className="opacity-60">v0.2</span>
         </footer>
       </div>
 
-      {/* ----- AYARLAR BUTONU (sağ üst köşe) ----- */}
+      {/* Seçim sırasında sahneyi karartıp kitabı öne çıkaran örtü */}
+      {acilan && (
+        <div
+          className="pointer-events-none absolute inset-0 z-40 transition-colors duration-700"
+          style={{
+            background:
+              evre === 'aciliyor'
+                ? 'radial-gradient(circle at center, rgba(255,246,233,0.85), rgba(90,74,120,0.55))'
+                : 'rgba(90,74,120,0.35)',
+          }}
+        />
+      )}
+
+      {/* ----- AYARLAR BUTONU (sağ üst) ----- */}
       <IconButton
         onClick={() => setAyarlarAcik(true)}
         label="Ayarlar"
@@ -284,47 +277,31 @@ function HomeScreen({ onSelectBolum, soundOn, onToggleSound }) {
         ⚙️
       </IconButton>
 
-      {/* ============================================================
-          AYARLAR PENCERESİ
-      ============================================================ */}
+      {/* ----- AYARLAR PENCERESİ ----- */}
       <Modal acik={ayarlarAcik} baslik="Ayarlar" ikon="⚙️" onClose={() => setAyarlarAcik(false)}>
         <div className="flex flex-col gap-3">
-          <Toggle
-            acik={soundOn}
-            onToggle={onToggleSound}
-            ikon="🔊"
-            etiket="Ses efektleri"
-          />
-          <Toggle
-            acik={muzik}
-            onToggle={() => setMuzik((o) => !o)}
-            ikon="🎵"
-            etiket="Arka plan müziği"
-          />
-          <Toggle
-            acik={hareketAzalt}
-            onToggle={() => setHareketAzalt((o) => !o)}
-            ikon="🐢"
-            etiket="Hareketleri azalt"
-          />
+          <Toggle acik={soundOn} onToggle={onToggleSound} ikon="🔊" etiket="Ses efektleri" />
+          <Toggle acik={muzik} onToggle={onToggleMuzik} ikon="🎵" etiket="Arka plan müziği" />
+          <Toggle acik={hareketAzalt} onToggle={onToggleHareket} ikon="🐢" etiket="Hareketleri azalt" />
+          {/* (İleride) ebeveyn/profil alanı için yer */}
+          <div className="mt-1 rounded-2xl border-2 border-dashed border-gece/20 px-4 py-3 text-center">
+            <p className="font-baslik text-sm font-bold text-gece/50">👨‍👩‍👧 Ebeveyn alanı</p>
+            <p className="text-xs text-gece/40">Profiller ve ilerleme — yakında</p>
+          </div>
           <p className="mt-1 px-1 text-center text-xs text-gece/50">
             Ayarlar bu cihazda geçerlidir.
           </p>
         </div>
       </Modal>
 
-      {/* ============================================================
-          YASAL METİN PENCERESİ (tek modal, içeriği seçime göre değişir)
-      ============================================================ */}
+      {/* ----- YASAL METİN PENCERESİ ----- */}
       <Modal
         acik={yasalAcik !== null}
         baslik={yasalAcik ? YASAL_METINLER[yasalAcik].baslik : ''}
         ikon={yasalAcik ? YASAL_METINLER[yasalAcik].ikon : ''}
         onClose={() => setYasalAcik(null)}
       >
-        <p className="leading-relaxed">
-          {yasalAcik && YASAL_METINLER[yasalAcik].metin}
-        </p>
+        <p className="leading-relaxed">{yasalAcik && YASAL_METINLER[yasalAcik].metin}</p>
       </Modal>
     </div>
   )
