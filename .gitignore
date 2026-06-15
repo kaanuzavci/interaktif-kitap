@@ -1,6 +1,9 @@
 node_modules/
 dist/
 
+# Vercel CLI'ın oluşturduğu proje bağlantı klasörü (gizli, repoya girmez)
+.vercel/
+
 # Optimizasyon scriptinin aldığı orijinal görsel yedekleri (çok büyük, repoya girmesin)
 asset-yedek/
 .env
