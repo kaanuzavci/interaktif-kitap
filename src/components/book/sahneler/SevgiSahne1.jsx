@@ -74,7 +74,7 @@ function segmentSuresi(hedefIndex, hiz) {
 
    Kare bir noktası (px%,py%) -> sahnede (x + olcek*px, y + olcek*py)
 ---------------------------------------------------------------- */
-const TAVSAN_VARSAYILAN = { olcek: 0.45, x: -8.5, y: 32.7 }
+const TAVSAN_VARSAYILAN = { olcek: 0.39, x: -8, y: 41.5 }
 const UGUR_VARSAYILAN = { olcek: 0.18, x: 76.1, y: 51.3 }
 
 // Tıklama alanları (özneyi rahatça kapsar; çocuk parmağı için geniş)
@@ -176,9 +176,8 @@ function SevgiSahne1({ canli = true }) {
         onClick={canimaTiklandi}
         aria-label="Canım'a dokun"
         disabled={!canli}
-        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${
-          canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
-        }`}
+        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
+          }`}
         style={{ animationDelay: '1.2s' }}
       >
         {canli && hedefIndex === 0 && (
