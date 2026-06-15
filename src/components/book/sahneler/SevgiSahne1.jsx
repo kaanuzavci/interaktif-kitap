@@ -1,48 +1,63 @@
 import { useState } from 'react'
 import IsilYurume from '../../characters/IsilYurume.jsx'
+import TiklamaliSprite from '../TiklamaliSprite.jsx'
+
+// Ön plan çimeni (Işıl'ın ARKASINDA kalır; kütük bunun ÖNÜNDE durur)
+import cimen from '../../../assets/backgrounds/cimen.png'
 
 /* ===============================================================
-   SEVGİ — 1. SAHNE İÇERİĞİ (etkileşimli katmanlar)
+   SEVGİ — 1. SAHNE İÇERİĞİ (katmanlar + etkileşim)
 
-   Bu, "Sevgi" kitabının açılış sahnesinin Işıl + Canım kısmıdır.
-   Arka plan ve hikaye metni artık burada DEĞİL; onları Sahne.jsx
-   çiziyor. Burada yalnızca sahneye özgü ETKİLEŞİM var:
-   Canım'a dokununca Işıl rotayı takip ederek yanına yürür.
+   Bu sahnenin GÖRÜNÜMÜ artık tek bir hazır resim (sahne1-arkaplan)
+   değil; katmanların birleşiminden oluşuyor (Sahne.jsx arka planı
+   "arka_plan.jpg" olarak çiziyor, biz üstüne ekliyoruz):
 
-   Bu component "icerikBileseni" olarak sevgiSahneleri.js'e bağlanır.
-   Tüm konumlar sahnenin (tam 16:9 yüzeyin) yüzdesidir; kitap iki
-   sayfaya bölündüğünde bu yüzde koordinatlar korunur.
+     arka_plan.jpg  (Sahne çiziyor)           — en altta
+     cimen.png      (bu dosya)                — ön çimen, IŞIL'IN ARKASI
+     tavşan+kütük   (TiklamaliSprite)         — çimenin ÖNÜNDE, tıklanınca zıplar
+     uğurböceği     (TiklamaliSprite)         — papatya üstünde, tıklanınca hoplar
+     Işıl           (yürür)                   — çimenin önünde
+     Canım (çiçek)  — dokununca Işıl yürür    — en üstte
+
+   Tavşan/uğurböceği kütük & papatyaları zaten kendi karelerinde var;
+   bu yüzden arka_plan'a sabit olarak konmadılar (yoksa çift görünürdü).
 
    PROP: canli
-   - true  : tam etkileşim (yürüyüş, dokunma daveti, ayar paneli)
-   - false : DONUK görünüm (sayfa çevrilirken yaprağın üstünde
-             statik kopya olarak çizilir). Işıl başlangıç pozunda
-             durur, dokunma daveti gösterilmez.
+   - true  : tam etkileşim
+   - false : DONUK (sayfa çevirme sırasındaki statik kopya)
 =============================================================== */
 
+/* Tavşan ve uğurböceği kare dizilerini otomatik topla (sıralı) */
+function kareleriTopla(moduller) {
+  return Object.keys(moduller)
+    .sort()
+    .map((yol) => moduller[yol])
+}
+const tavsanKareleri = kareleriTopla(
+  import.meta.glob('../../../assets/characters/tavsan-zipla/*.png', {
+    eager: true,
+    import: 'default',
+  }),
+)
+const ugurKareleri = kareleriTopla(
+  import.meta.glob('../../../assets/characters/ugurbocegi-zipla/*.png', {
+    eager: true,
+    import: 'default',
+  }),
+)
+
 /* ---------------------------------------------------------------
-   YÜRÜYÜŞ ROTASI (waypoint sistemi)
-   Işıl yolun açıkta kalan bölümünde (sahnenin ~%27–%49'u) yürür.
-   - left   : karakter kutusunun soldan uzaklığı (sahne %'si)
-   - bottom : alttan uzaklık (sahne yüksekliğinin %'si)
-   İnce ayar: Işıl yola tam basmıyorsa SADECE bu sayılarla oyna.
+   IŞIL YÜRÜYÜŞ ROTASI — (DEĞİŞMEDİ, mevcut mantık korunuyor)
 ---------------------------------------------------------------- */
 const YURUYUS_ROTASI = [
-  { left: '27%', bottom: '1%' }, // 0: başlangıç
-  { left: '36%', bottom: '1%' }, // 1: yol hafifçe iniyor
-  { left: '41%', bottom: '1%' }, // 2: yolun en alçak kısmı
-  { left: '49%', bottom: '1%' }, // 3: varış (Canım'a yaklaşır)
+  { left: '27%', bottom: '1%' },
+  { left: '36%', bottom: '1%' },
+  { left: '41%', bottom: '1%' },
+  { left: '49%', bottom: '1%' },
 ]
-
-/* HIZ ile FRAME_SURESI'nin UYUMU önemli (bkz. eski Page1 notları):
-   - "Kayarak gidiyor"  -> HIZ'ı düşür
-   - "Yerinde sayıyor"  -> FRAME_SURESI'ni artır
-   Tasarımcılar siteye ?ayar ekleyerek paneli açıp deneyebilir. */
 const HIZ = 2.5
 const FRAME_SURESI = 150
 
-// İki durak arası süre (sn). Mesafeyi Pisagor'la buluyoruz; dikey %'yi
-// yatayla aynı ölçeğe getirmek için 9/16 ile çarpıyoruz (sahne 16:9).
 function segmentSuresi(hedefIndex, hiz) {
   const onceki = YURUYUS_ROTASI[hedefIndex - 1]
   const hedef = YURUYUS_ROTASI[hedefIndex]
@@ -51,37 +66,48 @@ function segmentSuresi(hedefIndex, hiz) {
   return Math.hypot(dx, dy) / hiz
 }
 
-// Ayar paneli yalnızca URL'de ?ayar varsa açılır (tasarımcılar için).
-// Canlı sitede normal kullanıcı görmez; kitabı kalabalıklaştırmaz.
+/* ---------------------------------------------------------------
+   SPRITE YERLEŞTİRME — sahne1-arkaplan'daki konuma göre ölçülen
+   başlangıç değerleri. Tam piksel hizası için ?ayar panelinden
+   ince ayar yapılabilir (kaydırakların altındaki değerler bana
+   iletilince buraya sabit yazarız).
+
+   Kare bir noktası (px%,py%) -> sahnede (x + olcek*px, y + olcek*py)
+---------------------------------------------------------------- */
+const TAVSAN_VARSAYILAN = { olcek: 0.45, x: -8.5, y: 32.7 }
+const UGUR_VARSAYILAN = { olcek: 0.18, x: 76.1, y: 51.3 }
+
+// Tıklama alanları (özneyi rahatça kapsar; çocuk parmağı için geniş)
+const TAVSAN_HOTSPOT = { left: '3%', top: '38%', width: '26%', height: '38%' }
+const UGUR_HOTSPOT = { left: '78%', top: '52%', width: '17%', height: '24%' }
+
+// Ayar paneli yalnızca URL'de ?ayar varsa görünür (tasarımcılar için)
 const AYAR_MODU =
   typeof window !== 'undefined' &&
   new URLSearchParams(window.location.search).has('ayar')
 
 function SevgiSahne1({ canli = true }) {
-  // Işıl'ın yöneldiği durağın sırası (0 = başlangıçta duruyor)
+  // --- IŞIL YÜRÜYÜŞÜ (mevcut mantık, dokunulmadı) ---
   const [hedefIndex, setHedefIndex] = useState(0)
-  // Işıl şu an yürüyor mu? (sprite animasyonu oynasın mı)
   const [yuruyor, setYuruyor] = useState(false)
-  // Ayar panelinin canlı değerleri
   const [hiz, setHiz] = useState(HIZ)
   const [frameSuresi, setFrameSuresi] = useState(FRAME_SURESI)
 
-  // "Başa sar": Işıl'ı başlangıca ışınla
+  // --- SPRITE YERLEŞTİRME (ayar panelinden canlı değiştirilebilir) ---
+  const [tavsan, setTavsan] = useState(TAVSAN_VARSAYILAN)
+  const [ugur, setUgur] = useState(UGUR_VARSAYILAN)
+
   const basaSar = () => {
     setYuruyor(false)
     setHedefIndex(0)
   }
-
-  // Canım'a dokununca rota başlasın (donuk modda etkileşim yok)
   const canimaTiklandi = () => {
     if (!canli || yuruyor || hedefIndex !== 0) return
     setYuruyor(true)
     setHedefIndex(1)
   }
-
-  // Bir durağa varınca: ya devam et ya da dur
   const duragaVardi = (e) => {
-    if (e.propertyName !== 'left') return // left VE bottom'u ayrı saymamak için
+    if (e.propertyName !== 'left') return
     if (hedefIndex < YURUYUS_ROTASI.length - 1) {
       setHedefIndex(hedefIndex + 1)
     } else {
@@ -91,9 +117,44 @@ function SevgiSahne1({ canli = true }) {
 
   return (
     <div className="absolute inset-0">
-      {/* ===== IŞIL (z-10) =====
-          Konumu hedefIndex'teki duraktan gelir; durak değişince CSS
-          transition onu mesafeye göre hesaplanan sürede taşır. */}
+      {/* ===== ÖN ÇİMEN (Işıl'ın ARKASI, kütüğün ÖNÜ değil — en altta) ===== */}
+      <img
+        src={cimen}
+        alt=""
+        draggable={false}
+        className="pointer-events-none absolute inset-0 h-full w-full select-none"
+        style={{ zIndex: 1 }}
+      />
+
+      {/* ===== TAVŞAN + KÜTÜK (çimenin önünde; tıklayınca zıplar) ===== */}
+      <TiklamaliSprite
+        frames={tavsanKareleri}
+        olcek={tavsan.olcek}
+        x={tavsan.x}
+        y={tavsan.y}
+        frameSuresiMs={70}
+        tekrar={1}
+        hotspot={TAVSAN_HOTSPOT}
+        etiket="Kütüğe dokun, tavşan çıksın"
+        canli={canli}
+        zIndex={5}
+      />
+
+      {/* ===== UĞURBÖCEĞİ (papatya üstünde; tıklayınca hoplar) ===== */}
+      <TiklamaliSprite
+        frames={ugurKareleri}
+        olcek={ugur.olcek}
+        x={ugur.x}
+        y={ugur.y}
+        frameSuresiMs={140}
+        tekrar={4}
+        hotspot={UGUR_HOTSPOT}
+        etiket="Uğurböceğine dokun"
+        canli={canli}
+        zIndex={6}
+      />
+
+      {/* ===== IŞIL (z-10, çimenin önünde) — mevcut yürüyüş ===== */}
       <div
         className="absolute z-10"
         style={{
@@ -120,7 +181,6 @@ function SevgiSahne1({ canli = true }) {
         }`}
         style={{ animationDelay: '1.2s' }}
       >
-        {/* Dokunma daveti — yalnızca canlı modda ve Işıl yola çıkmadan önce */}
         {canli && hedefIndex === 0 && (
           <span className="animate-kalp mb-1 rounded-full bg-white/90 px-3 py-1 font-baslik text-xs font-bold text-seker shadow-md md:text-sm">
             Bana dokun! 👆
@@ -136,45 +196,75 @@ function SevgiSahne1({ canli = true }) {
 
       {/* ===== AYAR PANELİ (yalnızca ?ayar + canlı modda) ===== */}
       {AYAR_MODU && canli && (
-        <div className="absolute bottom-3 left-3 z-50 w-64 rounded-2xl bg-gece/90 p-4 font-metin text-sm text-white shadow-xl">
-          <p className="mb-2 font-baslik font-bold">🔧 Yürüyüş ayarları</p>
+        <div className="absolute bottom-3 left-3 z-50 max-h-[88%] w-72 overflow-auto rounded-2xl bg-gece/90 p-4 font-metin text-sm text-white shadow-xl">
+          <p className="mb-2 font-baslik font-bold">🔧 Sahne ayarları</p>
 
+          {/* --- Işıl yürüyüş --- */}
+          <p className="mt-1 font-baslik text-xs font-bold text-gunes">Işıl yürüyüş</p>
           <label className="block">
-            Hız: <b>{hiz}</b> (ekranda ilerleme)
-            <input
-              type="range" min="1" max="8" step="0.5"
-              value={hiz}
-              onChange={(e) => setHiz(Number(e.target.value))}
-              className="w-full"
-            />
+            Hız: <b>{hiz}</b>
+            <input type="range" min="1" max="8" step="0.5" value={hiz}
+              onChange={(e) => setHiz(Number(e.target.value))} className="w-full" />
           </label>
-
-          <label className="mt-2 block">
-            Adım süresi: <b>{frameSuresi}ms</b> (bacak temposu)
-            <input
-              type="range" min="60" max="300" step="10"
-              value={frameSuresi}
-              onChange={(e) => setFrameSuresi(Number(e.target.value))}
-              className="w-full"
-            />
+          <label className="mt-1 block">
+            Adım süresi: <b>{frameSuresi}ms</b>
+            <input type="range" min="60" max="300" step="10" value={frameSuresi}
+              onChange={(e) => setFrameSuresi(Number(e.target.value))} className="w-full" />
           </label>
-
-          <button
-            onClick={basaSar}
-            className="mt-3 w-full rounded-full bg-gunes py-1.5 font-baslik font-bold text-gece"
-          >
+          <button onClick={basaSar} className="mt-2 w-full rounded-full bg-gunes py-1 font-baslik font-bold text-gece">
             ⏪ Başa sar
           </button>
 
-          <div className="mt-3 rounded-xl bg-black/30 px-3 py-2 text-center text-xs">
+          {/* --- Tavşan/kütük yerleşimi --- */}
+          <p className="mt-3 font-baslik text-xs font-bold text-gunes">🐰 Tavşan / kütük</p>
+          <KonumKaydirak etiket="Ölçek" deger={tavsan.olcek} min={0.15} max={0.9} step={0.005}
+            ayarla={(v) => setTavsan((o) => ({ ...o, olcek: v }))} />
+          <KonumKaydirak etiket="Sol (x)" deger={tavsan.x} min={-40} max={40} step={0.5}
+            ayarla={(v) => setTavsan((o) => ({ ...o, x: v }))} />
+          <KonumKaydirak etiket="Üst (y)" deger={tavsan.y} min={-10} max={80} step={0.5}
+            ayarla={(v) => setTavsan((o) => ({ ...o, y: v }))} />
+
+          {/* --- Uğurböceği yerleşimi --- */}
+          <p className="mt-3 font-baslik text-xs font-bold text-gunes">🐞 Uğurböceği</p>
+          <KonumKaydirak etiket="Ölçek" deger={ugur.olcek} min={0.05} max={0.5} step={0.005}
+            ayarla={(v) => setUgur((o) => ({ ...o, olcek: v }))} />
+          <KonumKaydirak etiket="Sol (x)" deger={ugur.x} min={40} max={100} step={0.5}
+            ayarla={(v) => setUgur((o) => ({ ...o, x: v }))} />
+          <KonumKaydirak etiket="Üst (y)" deger={ugur.y} min={20} max={90} step={0.5}
+            ayarla={(v) => setUgur((o) => ({ ...o, y: v }))} />
+
+          {/* --- İletilecek değerler --- */}
+          <div className="mt-3 rounded-xl bg-black/30 px-3 py-2 text-xs">
             <p className="mb-0.5 opacity-70">📋 Bu değerleri iletin:</p>
+            <p className="font-baslik font-bold text-gunes">Hız={hiz} · Adım={frameSuresi}ms</p>
             <p className="font-baslik font-bold text-gunes">
-              Hız = {hiz} · Adım = {frameSuresi}ms
+              Tavşan: ölçek={tavsan.olcek} x={tavsan.x} y={tavsan.y}
+            </p>
+            <p className="font-baslik font-bold text-gunes">
+              Uğur: ölçek={ugur.olcek} x={ugur.x} y={ugur.y}
             </p>
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+/* Ayar panelindeki tek bir kaydırak satırı (kod tekrarını azaltır) */
+function KonumKaydirak({ etiket, deger, min, max, step, ayarla }) {
+  return (
+    <label className="mt-1 block">
+      {etiket}: <b>{deger}</b>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={deger}
+        onChange={(e) => ayarla(Number(e.target.value))}
+        className="w-full"
+      />
+    </label>
   )
 }
 

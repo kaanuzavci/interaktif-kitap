@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import IsilYurume from '../characters/IsilYurume.jsx'
-import sahne1Arkaplan from '../../assets/backgrounds/sahne1-arkaplan.jpg'
+import arkaPlan from '../../assets/backgrounds/arka_plan.jpg'
+import cimen from '../../assets/backgrounds/cimen.png'
 
 /* ===============================================================
    YÜKLEME EKRANI
@@ -27,8 +28,8 @@ const kareModulleri = import.meta.glob(
 
 // Önyüklenecek kritik görsellerin url listesi:
 // giriş ekranı saf CSS olduğu için ağır görsel yok; kritik olan ilk
-// bölümün arka planı + Işıl'ın tüm kareleridir.
-const KRITIK_GORSELLER = [sahne1Arkaplan, ...Object.values(kareModulleri)]
+// bölümün taban arka planı + ön çimen + Işıl'ın tüm kareleridir.
+const KRITIK_GORSELLER = [arkaPlan, cimen, ...Object.values(kareModulleri)]
 
 // Çok hızlı yüklemelerde ekran "çakıp" geçmesin diye minimum süre (ms)
 const MIN_SURE = 1500

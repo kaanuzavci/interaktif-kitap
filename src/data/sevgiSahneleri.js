@@ -30,19 +30,22 @@
    - 'dokunmatik' : dokununca kısa bir tepki veren öğe (`etki`: 'parla'|'zipla'|'sallan')
 =============================================================== */
 
-import sahne1Arkaplan from '../assets/backgrounds/sahne1-arkaplan.jpg'
+// Yeni TABAN arka plan (çimensiz bölge + tavşan/uğurböceği yok); eksik
+// parçalar SevgiSahne1 içinde katman/sprite olarak ekleniyor.
+import arkaPlan from '../assets/backgrounds/arka_plan.jpg'
 import SevgiSahne1 from '../components/book/sahneler/SevgiSahne1.jsx'
 
 export const SEVGI_SAHNELERI = [
   {
     id: 'sevgi-01',
-    arkaplan: sahne1Arkaplan,
+    arkaplan: arkaPlan,
     baslik: 'Sevgi 💝',
     metin:
       'Işıl, bahçesindeki konuşan çiçeği Canım’la her sabah selamlaşırdı.',
-    metinKonum: 'alt-sol',
+    // Üstteki boş gökyüzüne yaz (alt taraf kütük/çimen/çiçeklerle dolu)
+    metinKonum: 'ust',
     // Bu sahnenin etkileşimi kendine özgü olduğu için özel bir
-    // bileşenle çiziliyor (Işıl Canım'a doğru yürür).
+    // bileşenle çiziliyor (çimen + tavşan + uğurböceği + Işıl + Canım).
     icerikBileseni: SevgiSahne1,
     katmanlar: [],
   },
