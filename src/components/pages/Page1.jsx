@@ -37,12 +37,24 @@ const YURUYUS_ROTASI = [
    - "Kayarak gidiyor" (bacaklar yavaş, zemin hızlı)  -> HIZ'ı düşür
    - "Yerinde sayıyor" (bacaklar hızlı, az ilerliyor) -> FRAME_SURESI'ni artır
 
-   Geliştirme modunda (npm run dev) ekranın sol altında çıkan
-   AYAR PANELİ ile ikisini canlı deneyebilirsin. Doğru hissi
-   bulunca değerleri buraya yaz - kalıcı hale gelir.
+   Sol alttaki AYAR PANELİ ile ikisini canlı deneyebilirsin. Panel
+   şu durumlarda görünür:
+     - npm run dev (geliştirme) modunda, VEYA
+     - URL'nin sonuna ?ayar eklenince (canlı sitede tasarımcılar için)
+   Doğru hissi bulunca panelin altındaki değerleri buraya yaz -
+   kalıcı hale gelir.
 ---------------------------------------------------------------- */
 const HIZ = 2.5
 const FRAME_SURESI = 150
+
+/* Ayar paneli görünsün mü?
+   - import.meta.env.DEV : "npm run dev"de true, yayında false
+   - ?ayar               : canlı sitede paneli açmak için özel bayrak
+   Böylece normal ziyaretçi paneli görmez, sadece linke ?ayar ekleyen görür. */
+const AYAR_MODU =
+  import.meta.env.DEV ||
+  (typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('ayar'))
 
 // İki durak arası yürüyüş süresi (saniye). Mesafeyi Pisagor'la
 // buluyoruz; bottom yüzdeleri yatayla aynı ölçeğe getirmek için
@@ -169,12 +181,11 @@ function Page1() {
         Işıl, bahçesindeki konuşan çiçeği Canım&apos;la her sabah selamlaşırdı.
       </p>
 
-      {/* ================= AYAR PANELİ (SADECE GELİŞTİRME) =================
-          import.meta.env.DEV: "npm run dev"de true, "npm run build"de false.
-          Yani bu panel yayınlanan kitapta ASLA görünmez.
-          Doğru hissi bulunca değerleri dosyanın başındaki HIZ ve
-          FRAME_SURESI sabitlerine yaz. */}
-      {import.meta.env.DEV && (
+      {/* ================= AYAR PANELİ =================
+          AYAR_MODU: geliştirme modunda VEYA URL'de ?ayar varsa görünür.
+          Tasarımcılar canlı sitede linke ?ayar ekleyerek bu paneli açar,
+          hızı/adım süresini ayarlar ve en alttaki değerleri bana iletir. */}
+      {AYAR_MODU && (
         <div className="absolute bottom-3 left-3 z-50 w-64 rounded-2xl bg-gece/90 p-4 font-metin text-sm text-white shadow-xl">
           <p className="mb-2 font-baslik font-bold">🔧 Yürüyüş ayarları</p>
 
@@ -204,6 +215,14 @@ function Page1() {
           >
             ⏪ Başa sar
           </button>
+
+          {/* Tasarımcının bana ileteceği değerler - kopyalaması kolay olsun */}
+          <div className="mt-3 rounded-xl bg-black/30 px-3 py-2 text-center text-xs">
+            <p className="mb-0.5 opacity-70">📋 Bu değerleri iletin:</p>
+            <p className="font-baslik font-bold text-gunes">
+              Hız = {hiz} · Adım = {frameSuresi}ms
+            </p>
+          </div>
         </div>
       )}
     </div>
