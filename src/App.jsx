@@ -3,7 +3,14 @@ import { Howler } from 'howler'
 import LoadingScreen from './components/screens/LoadingScreen.jsx'
 import HomeScreen from './components/screens/HomeScreen.jsx'
 import BookReader from './components/book/BookReader.jsx'
+import TestSayfasi from './components/screens/TestSayfasi.jsx'
 import useHareketAzalt from './hooks/useHareketAzalt.js'
+
+// Geliştirici test sayfası: yalnızca URL'de ?test varsa (animasyon/şeffaflık
+// doğrulaması). Sahne 1'deki ?ayar paneliyle aynı mantık.
+const TEST_MODU =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).has('test')
 
 /**
  * App: Uygulamanın en üst bileşeni.
@@ -36,6 +43,9 @@ function App() {
   const osHareketAzalt = useHareketAzalt()
   // Etkin değer: kullanıcı anahtarı VEYA OS tercihi
   const hareketAzalt = hareketAzaltAyar || osHareketAzalt
+
+  // Geliştirici test sayfası (her şeyden önce) — ?test ile açılır
+  if (TEST_MODU) return <TestSayfasi />
 
   // Ses aç/kapat
   const toggleSound = () => {

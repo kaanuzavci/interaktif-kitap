@@ -6,6 +6,9 @@ dist/
 
 # Optimizasyon scriptinin aldığı orijinal görsel yedekleri (çok büyük, repoya girmesin)
 asset-yedek/
+
+# Yanlışlıkla buraya inen NVIDIA sürücü dökümü (alakasız, repoya/dağıtıma girmemeli)
+src/assets/backgrounds/Downloads/
 .env
 *.log
 Thumbs.db

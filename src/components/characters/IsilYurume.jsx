@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 
 /* ---------------------------------------------------------------
    FRAME'LERİ OTOMATİK YÜKLEME (import.meta.glob)
@@ -12,118 +12,134 @@ const frames = Object.keys(frameModulleri)
   .sort()
   .map((dosyaYolu) => frameModulleri[dosyaYolu])
 
-/* Her pozun ekranda kalma süresi (ms) - VARSAYILAN (SevgiSahne1 override eder). */
+export const ISIL_KARE_SAYISI = frames.length
+
+/* Her pozun ekranda kalma süresi (ms) - VARSAYILAN. */
 const FRAME_SURESI_MS = 150
 
 /**
  * IsilYurume: Işıl'ın yürüme animasyonu (sprite animasyon).
  *
- * NEDEN requestAnimationFrame + imperatif <img>?
- *  Eski sürüm setInterval + React state kullanıyordu. Işıl yürürken
- *  (CSS konum geçişi + sık yeniden render + ağır layout) React, kare
- *  state güncellemelerini erteleyebiliyor; CSS konumu bağımsız
- *  ilerlediği için karakter "kayarak" gidiyor ama kare donuyordu
- *  (F5'e kadar düzelmiyordu).
+ * PERFORMANS (Chrome'da kare atlama / kayma sorununun kökten çözümü):
+ *  - SRC DEĞİŞİMİ YOK: tüm kareler BİR KEZ <img> olarak basılır, üst üste
+ *    bindirilir ve yalnızca `opacity` ile gösterilir/gizlenir. Böylece her
+ *    karede decode/paint beklemesi olmaz; geçiş compositor'da (GPU) olur.
+ *  - rAF + GERÇEK SÜRE (delta): hangi karede olunacağı geçen GERÇEK süreden
+ *    hesaplanır (setInterval drift'i yok). CPU yoğun olsa/sekme arka plana
+ *    geçse bile zamanla senkron kalır.
  *
- *  Bu sürümde animasyon React render döngüsünden TAMAMEN bağımsız:
- *   - Tek bir rAF döngüsü component yaşadığı sürece çalışır; üst
- *     bileşen ne kadar yeniden render olursa olsun ASLA teardown olmaz.
- *   - Kare doğrudan <img>'in src'sine (ref ile) yazılır → React
- *     reconcile'ı kareyi sıfırlayamaz, ertelenemez.
- *   - İlerleme GERÇEK geçen süreye göre (drift yok, kendini düzeltir).
- *   - isPlaying / frameSuresiMs ref ile okunur → döngü prop değişince
- *     yeniden kurulmaz (eski hatanın kök nedeni buydu).
+ * İKİ KULLANIM:
+ *  1) Kendi kendine (LoadingScreen): `isPlaying` ile YERİNDE yürür; bileşen
+ *     kendi rAF döngüsünü çalıştırır.
+ *  2) KONTROLLÜ (yürüyüş sahnesi): `kontrollu` verilirse iç döngü çalışmaz;
+ *     üst bileşen TEK rAF döngüsünden ref ile `kareGoster(i)` çağırır
+ *     (konum + kare aynı döngüde → asla kaymaz).
  *
  * Props:
  *  - width        : karakter genişliği (örn. 200, "18vw", "100%")
  *  - style        : ek stil (parent'tan)
- *  - isPlaying    : true -> yürüme oynar, false -> ilk karede (duruş) durur
+ *  - isPlaying    : (kontrolsüz mod) true -> yürür, false -> duruş karesi
  *  - frameSuresiMs: bir pozun süresi (adım temposu)
+ *  - kontrollu    : true -> iç döngü yok; kare dışarıdan ref ile yönetilir
+ *
+ * Imperative handle (ref):
+ *  - kareGoster(i): i. kareyi göster (opacity)
  */
-function IsilYurume({
-  width = 200,
-  style = {},
-  isPlaying = false,
-  frameSuresiMs = FRAME_SURESI_MS,
-}) {
-  const imgRef = useRef(null)
-  // Prop'ları ref'te tutuyoruz ki rAF döngüsü onları güncel okusun
-  // ama prop değişince effect yeniden KURULMASIN (döngü hiç ölmesin).
+const IsilYurume = forwardRef(function IsilYurume(
+  {
+    width = 200,
+    style = {},
+    isPlaying = false,
+    frameSuresiMs = FRAME_SURESI_MS,
+    kontrollu = false,
+  },
+  ref,
+) {
+  const imgRefleri = useRef([]) // her karenin <img> elemanı
+  const aktifRef = useRef(0) // o an görünen kare
+  const rafRef = useRef(0)
   const playingRef = useRef(isPlaying)
   const sureRef = useRef(frameSuresiMs)
   playingRef.current = isPlaying
   sureRef.current = frameSuresiMs
 
-  // Frame'leri tarayıcı önbelleğine al (ilk turda titreme olmasın)
+  // Belirli kareyi göster — yalnızca iki <img>'in opacity'sini değiştir
+  // (src'ye dokunmaz → decode yok; GPU compositor işi).
+  const kareGoster = (i) => {
+    const n = frames.length
+    if (!n) return
+    const yeni = ((i % n) + n) % n
+    const eski = aktifRef.current
+    if (yeni === eski) return
+    const a = imgRefleri.current[eski]
+    const b = imgRefleri.current[yeni]
+    if (a) a.style.opacity = '0'
+    if (b) b.style.opacity = '1'
+    aktifRef.current = yeni
+  }
+
+  useImperativeHandle(ref, () => ({ kareGoster }), [])
+
+  // KONTROLSÜZ mod: kendi rAF döngüsü (delta/gerçek süre) ile yerinde yürü
   useEffect(() => {
-    frames.forEach((url) => {
-      const img = new Image()
-      img.src = url
-    })
-  }, [])
+    if (kontrollu || frames.length === 0) return
+    let baslangic
 
-  // Tek seferlik rAF döngüsü — component yaşadığı sürece çalışır
-  useEffect(() => {
-    if (frames.length === 0) return
-
-    let rafId
-    let sonZaman // son kare değişim zamanı
-    let idx = 0
-
-    // Başlangıç karesi (duruş pozu) — imperatif
-    if (imgRef.current) imgRef.current.src = frames[0]
-
-    const tik = (zaman) => {
-      rafId = requestAnimationFrame(tik)
-
-      // Duruyorsa: ilk karede (duruş pozu) bekle
+    const tik = (now) => {
+      rafRef.current = requestAnimationFrame(tik)
       if (!playingRef.current) {
-        if (idx !== 0) {
-          idx = 0
-          if (imgRef.current) imgRef.current.src = frames[0]
-        }
-        sonZaman = zaman
+        baslangic = now
+        if (aktifRef.current !== 0) kareGoster(0)
         return
       }
-
-      if (sonZaman === undefined) sonZaman = zaman
-      // Yeterince süre geçtiyse bir sonraki kareye geç (gerçek süreye göre)
-      if (zaman - sonZaman >= sureRef.current) {
-        sonZaman = zaman
-        idx = (idx + 1) % frames.length
-        if (imgRef.current) imgRef.current.src = frames[idx]
-      }
+      if (baslangic === undefined) baslangic = now
+      const idx = Math.floor((now - baslangic) / sureRef.current) % frames.length
+      kareGoster(idx)
     }
+    rafRef.current = requestAnimationFrame(tik)
 
-    rafId = requestAnimationFrame(tik)
-
-    // Sekmeye geri dönülünce: zamanı sıfırla (uzun süre arka planda
-    // kaldıysa tek seferde sıçramasın). Döngü zaten bekleyen rAF ile sürer.
+    // Sekmeye dönünce zamanı sıfırla (uzun süre arka planda kaldıysa
+    // tek seferde sıçramasın; döngü zaten gerçek süreye göre toparlar).
     const gorunur = () => {
-      if (document.visibilityState === 'visible') sonZaman = undefined
+      if (document.visibilityState === 'visible') baslangic = undefined
     }
     document.addEventListener('visibilitychange', gorunur)
 
     return () => {
-      cancelAnimationFrame(rafId)
+      cancelAnimationFrame(rafRef.current)
       document.removeEventListener('visibilitychange', gorunur)
     }
-  }, [])
+  }, [kontrollu])
 
   if (frames.length === 0) return null
 
-  // DİKKAT: src JSX'te VERİLMEZ; rAF döngüsü imperatif olarak yazar.
-  // (src'yi JSX'e koyarsak React her render'da onu sıfırlar ve
-  //  imperatif güncellemeyle çakışır.)
+  // Tüm kareler üst üste; ilk kare AKIŞTA (kapsayıcıya en-boy verir),
+  // diğerleri absolute olarak tam üstüne biner. Sadece biri opak.
   return (
-    <img
-      ref={imgRef}
-      alt="Işıl"
-      draggable={false}
-      style={{ width, ...style }}
+    <div
+      style={{ width, position: 'relative', ...style }}
       className="pointer-events-none select-none"
-    />
+    >
+      {frames.map((src, i) => (
+        <img
+          key={i}
+          ref={(el) => (imgRefleri.current[i] = el)}
+          src={src}
+          alt={i === 0 ? 'Işıl' : ''}
+          draggable={false}
+          decoding="async"
+          fetchPriority={i === 0 ? 'high' : 'low'}
+          style={{
+            display: 'block',
+            width: '100%',
+            opacity: i === 0 ? 1 : 0,
+            willChange: 'opacity',
+            ...(i === 0 ? {} : { position: 'absolute', inset: 0, height: '100%' }),
+          }}
+        />
+      ))}
+    </div>
   )
-}
+})
 
 export default IsilYurume

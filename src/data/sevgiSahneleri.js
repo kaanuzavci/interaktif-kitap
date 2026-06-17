@@ -33,43 +33,31 @@
 // Yeni TABAN arka plan (çimensiz bölge + tavşan/uğurböceği yok); eksik
 // parçalar SevgiSahne1 içinde katman/sprite olarak ekleniyor.
 import arkaPlan from '../assets/backgrounds/arka_plan.jpg'
+import arkaPlan2 from '../assets/backgrounds/arka_plan2.jpg'
 import SevgiSahne1 from '../components/book/sahneler/SevgiSahne1.jsx'
+import SevgiSahne2 from '../components/book/sahneler/SevgiSahne2.jsx'
 
 export const SEVGI_SAHNELERI = [
   {
     id: 'sevgi-01',
     arkaplan: arkaPlan,
-    baslik: 'Sevgi 💝',
-    metin:
-      'Işıl, bahçesindeki konuşan çiçeği Canım’la her sabah selamlaşırdı.',
-    // Üstteki boş gökyüzüne yaz (alt taraf kütük/çimen/çiçeklerle dolu)
-    metinKonum: 'ust',
+    // NOT: Sayfa metinleri (başlık + anlatı) şimdilik kaldırıldı; yazılar
+    // sonradan eklenecek. (baslik/metin verilince Sahne otomatik gösterir.)
     // Bu sahnenin etkileşimi kendine özgü olduğu için özel bir
     // bileşenle çiziliyor (çimen + tavşan + uğurböceği + Işıl + Canım).
     icerikBileseni: SevgiSahne1,
     katmanlar: [],
   },
 
-  // --- 2. SAHNE (GEÇİCİ / DEMO) ---
-  // Bu sahnenin iki amacı var:
-  //  1. Sayfa çevirme etkileşimi tek sahneyle denenemez; bu ikinci sahne
-  //     çevirmeyi (ve sesi) görünür kılar.
-  //  2. Arka plan GÖRSELİ olmadan, yalnızca `katmanlar` ile kurulan
-  //     veri-odaklı sahne yolunu örnekler. Gerçek 2. sahne görseli
-  //     gelince bu nesne onunla değiştirilebilir.
+  // --- 2. SAHNE (ODA: Işıl çiçeği uzatıyor + Canım) ---
+  // Arka plan görseli (arka_plan2: oda + pencere + masa) üzerine
+  // kalemler + Işıl (8 kare) + Canım (60 kare) katmanları, kendine özgü
+  // bir içerik bileşeniyle (SevgiSahne2) yerleştirilir.
   {
     id: 'sevgi-02',
-    // arkaplan yok → Sahne yumuşak bir degrade çizer
-    arkaplanDegrade: 'linear-gradient(to bottom, #ffe3ee 0%, #fff1dd 55%, #fff6e9 100%)',
-    baslik: 'Devam edecek…',
-    metin: 'Işıl’ın hikâyesi büyüyor. Yeni sahneler çok yakında! 🌼',
-    metinKonum: 'alt',
-    katmanlar: [
-      { tip: 'emoji', icerik: '🌸', x: '30%', y: '55%', boyut: 'clamp(2rem,7vw,5rem)', animasyon: 'sallan' },
-      { tip: 'emoji', icerik: '🦋', x: '68%', y: '62%', boyut: 'clamp(1.5rem,5vw,3.5rem)', animasyon: 'yuzen' },
-      { tip: 'emoji', icerik: '✨', x: '50%', y: '74%', boyut: 'clamp(1.2rem,4vw,2.5rem)', animasyon: 'parilti' },
-      { tip: 'dokunmatik', ad: 'Tavşan', icerik: '🐰', x: '50%', y: '30%', boyut: 'clamp(2.5rem,9vw,6rem)', etki: 'zipla' },
-    ],
+    arkaplan: arkaPlan2,
+    icerikBileseni: SevgiSahne2,
+    katmanlar: [],
   },
 ]
 

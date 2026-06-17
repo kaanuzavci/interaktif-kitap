@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import IsilYurume from '../../characters/IsilYurume.jsx'
+import IsilYurume, { ISIL_KARE_SAYISI } from '../../characters/IsilYurume.jsx'
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
+import { useHareketAzalt } from '../../../hooks/useHareketAzalt.js'
 
 // Ön plan çimeni (tavşan/kütüğün ÖNÜNDE, Işıl'ın ARKASINDA kalır)
 import cimen from '../../../assets/backgrounds/cimen.png'
@@ -8,23 +9,22 @@ import cimen from '../../../assets/backgrounds/cimen.png'
 /* ===============================================================
    SEVGİ — 1. SAHNE İÇERİĞİ (katmanlar + etkileşim)
 
-   Bu sahnenin GÖRÜNÜMÜ artık tek bir hazır resim (sahne1-arkaplan)
-   değil; katmanların birleşiminden oluşuyor (Sahne.jsx arka planı
-   "arka_plan.jpg" olarak çiziyor, biz üstüne ekliyoruz):
-
+   Katmanlar (alttan üste):
      arka_plan.jpg  (Sahne çiziyor)           — en altta
-     tavşan+kütük   (TiklamaliSprite)         — çimenin ARKASINDA, tıklanınca zıplar
+     tavşan+kütük   (TiklamaliSprite)         — çimenin ARKASINDA, dokununca zıplar
      cimen.png      (bu dosya)                — ön çimen, kütüğün ÖNÜ, IŞIL'IN ARKASI
-     uğurböceği     (TiklamaliSprite)         — papatya üstünde, tıklanınca hoplar
+     uğurböceği     (TiklamaliSprite)         — papatya üstünde, dokununca hoplar
      Işıl           (yürür)                   — çimenin önünde
      Canım (çiçek)  — dokununca Işıl yürür    — en üstte
 
-   Tavşan/uğurböceği kütük & papatyaları zaten kendi karelerinde var;
-   bu yüzden arka_plan'a sabit olarak konmadılar (yoksa çift görünürdü).
+   ETKİLEŞİM DAVRANIŞI:
+   - Tavşan/uğurböceği: ilk dokunuşa kadar durur (üstünde "dokun" ipucu).
+     Bir kez dokununca DÖNGÜYE girer: bir kez oynar → kısa dinlenir → tekrar
+     (tekrar dokunmaya gerek yok). Tıklama yalnızca görünen piksellerde.
+   - Işıl: Canım'a ilk dokunuşta soldan sağa yürür; sağ uca varınca BAŞA
+     ışınlanır ve tekrar sağa yürür (sürekli; geriye doğru yürümez).
 
-   PROP: canli
-   - true  : tam etkileşim
-   - false : DONUK (sayfa çevirme sırasındaki statik kopya)
+   PROP: canli  (true: tam etkileşim, false: donuk statik kopya)
 =============================================================== */
 
 /* Tavşan ve uğurböceği kare dizilerini otomatik topla (sıralı) */
@@ -47,41 +47,28 @@ const ugurKareleri = kareleriTopla(
 )
 
 /* ---------------------------------------------------------------
-   IŞIL YÜRÜYÜŞ ROTASI — (DEĞİŞMEDİ, mevcut mantık korunuyor)
+   IŞIL YÜRÜYÜŞ ROTASI — soldan sağa düz çizgi (hep aynı yükseklik).
+   Konum tek rAF döngüsünde translate3d ile sürülür (CSS transition YOK)
+   → kare animasyonu ile her zaman senkron, asla "kayarak" gitmez.
 ---------------------------------------------------------------- */
-const YURUYUS_ROTASI = [
-  { left: '27%', bottom: '1%' },
-  { left: '36%', bottom: '1%' },
-  { left: '41%', bottom: '1%' },
-  { left: '49%', bottom: '1%' },
-]
-const HIZ = 2.5
-const FRAME_SURESI = 150
+const ISIL_BASLANGIC_LEFT = 27 // % (sol)
+const ISIL_BITIS_LEFT = 49 // % (sağ)
+const ISIL_MENZIL_FRAC = (ISIL_BITIS_LEFT - ISIL_BASLANGIC_LEFT) / 100 // sahne genişliğinin oranı
+const ISIL_GENISLIK = '17.5%'
+const ISIL_BOTTOM = '1%'
+const HIZ = 2.5 // % / s (mesafe / süre)
+const FRAME_SURESI = 150 // adım (kare) süresi (ms)
 
-function segmentSuresi(hedefIndex, hiz) {
-  const onceki = YURUYUS_ROTASI[hedefIndex - 1]
-  const hedef = YURUYUS_ROTASI[hedefIndex]
-  const dx = parseFloat(hedef.left) - parseFloat(onceki.left)
-  const dy = (parseFloat(hedef.bottom) - parseFloat(onceki.bottom)) * (9 / 16)
-  return Math.hypot(dx, dy) / hiz
+// Tam yürüyüş süresi (ms): toplam mesafe(%) / hız → saniye
+function yuruSuresiMs(hiz) {
+  return ((ISIL_BITIS_LEFT - ISIL_BASLANGIC_LEFT) / hiz) * 1000
 }
 
 /* ---------------------------------------------------------------
-   SPRITE YERLEŞTİRME — sahne1-arkaplan'daki konuma göre ölçülen
-   başlangıç değerleri. Tam piksel hizası için ?ayar panelinden
-   ince ayar yapılabilir (kaydırakların altındaki değerler bana
-   iletilince buraya sabit yazarız).
-
-   Kare bir noktası (px%,py%) -> sahnede (x + olcek*px, y + olcek*py)
+   SPRITE YERLEŞTİRME — ?ayar panelinden ince ayar yapılabilir.
 ---------------------------------------------------------------- */
 const TAVSAN_VARSAYILAN = { olcek: 0.39, x: -8, y: 41.5 }
 const UGUR_VARSAYILAN = { olcek: 0.18, x: 76.1, y: 51.3 }
-
-// Tıklama alanları — sprite konumlarına göre hizalı
-// Tavşan kütüğü: sprite olcek=0.39, x=-8%, y=41.5% → kütük sahnenin sol-altında
-const TAVSAN_HOTSPOT = { left: '1%', top: '45%', width: '16%', height: '32%' }
-// Uğurböceği: sprite olcek=0.18, x=76.1%, y=51.3% → sağ alt papatyanın üstünde
-const UGUR_HOTSPOT = { left: '80%', top: '56%', width: '12%', height: '16%' }
 
 // Ayar paneli yalnızca URL'de ?ayar varsa görünür (tasarımcılar için)
 const AYAR_MODU =
@@ -90,48 +77,26 @@ const AYAR_MODU =
 
 function SevgiSahne1({ canli = true }) {
   // --- IŞIL YÜRÜYÜŞÜ ---
-  const [hedefIndex, setHedefIndex] = useState(0)
-  const [yuruyor, setYuruyor] = useState(false)
+  // Sadece TETİK durumu React'te tutulur (kare/konum rAF'ta imperatif).
+  const [yuruyusAktif, setYuruyusAktif] = useState(false)
   const [hiz, setHiz] = useState(HIZ)
   const [frameSuresi, setFrameSuresi] = useState(FRAME_SURESI)
-  const basaSarTimeout = useRef(null)
 
   // --- SPRITE YERLEŞTİRME (ayar panelinden canlı değiştirilebilir) ---
   const [tavsan, setTavsan] = useState(TAVSAN_VARSAYILAN)
   const [ugur, setUgur] = useState(UGUR_VARSAYILAN)
 
-  // Timeout temizliği
-  useEffect(() => {
-    return () => {
-      if (basaSarTimeout.current) clearTimeout(basaSarTimeout.current)
-    }
-  }, [])
-
-  const basaSar = () => {
-    if (basaSarTimeout.current) clearTimeout(basaSarTimeout.current)
-    basaSarTimeout.current = null
-    setYuruyor(false)
-    setHedefIndex(0)
-  }
   const canimaTiklandi = () => {
-    if (!canli || yuruyor || hedefIndex !== 0) return
-    setYuruyor(true)
-    setHedefIndex(1)
+    if (!canli || yuruyusAktif) return
+    setYuruyusAktif(true)
   }
-  const duragaVardi = (e) => {
-    if (e.propertyName !== 'left') return
-    if (hedefIndex < YURUYUS_ROTASI.length - 1) {
-      setHedefIndex(hedefIndex + 1)
-    } else {
-      // Yürüyüş bitti — 2 saniye bekle, sonra başa sar (tekrar tıklanabilir)
-      setYuruyor(false)
-      if (basaSarTimeout.current) clearTimeout(basaSarTimeout.current)
-      basaSarTimeout.current = setTimeout(() => {
-        setHedefIndex(0)
-        basaSarTimeout.current = null
-      }, 2000)
-    }
-  }
+
+  const basaSar = () => setYuruyusAktif(false)
+
+  // Statik kopyada (canli false) yürüyüşü durdur
+  useEffect(() => {
+    if (!canli) setYuruyusAktif(false)
+  }, [canli])
 
   return (
     <div className="absolute inset-0">
@@ -144,71 +109,69 @@ function SevgiSahne1({ canli = true }) {
         style={{ zIndex: 7 }}
       />
 
-      {/* ===== TAVŞAN + KÜTÜK (çimenin arkasında; tıklayınca zıplar) ===== */}
+      {/* ===== TAVŞAN + KÜTÜK (çimenin arkasında; dokununca döngüde zıplar) ===== */}
       <TiklamaliSprite
         frames={tavsanKareleri}
         olcek={tavsan.olcek}
         x={tavsan.x}
         y={tavsan.y}
         frameSuresiMs={90}
-        tekrar={1}
         bekleKare={5}
         beklemeSuresiMs={600}
-        hotspot={TAVSAN_HOTSPOT}
-        etiket="Kütüğe dokun, tavşan çıksın"
+        donguArasiMs={900}
         canli={canli}
         zIndex={5}
       />
 
-      {/* ===== UĞURBÖCEĞİ (papatya üstünde; tıklayınca hoplar) ===== */}
+      {/* ===== UĞURBÖCEĞİ (papatya üstünde; dokununca tek hop + bekleme döngüsü) ===== */}
       <TiklamaliSprite
         frames={ugurKareleri}
         olcek={ugur.olcek}
         x={ugur.x}
         y={ugur.y}
-        frameSuresiMs={140}
-        tekrar={4}
-        hotspot={UGUR_HOTSPOT}
-        etiket="Uğurböceğine dokun"
+        frameSuresiMs={170}
+        donguArasiMs={750}
         canli={canli}
         zIndex={6}
       />
 
-      {/* ===== IŞIL (z-10, çimenin önünde) — mevcut yürüyüş ===== */}
-      <div
-        className="absolute z-10"
-        style={{
-          width: '17.5%',
-          left: YURUYUS_ROTASI[hedefIndex].left,
-          bottom: YURUYUS_ROTASI[hedefIndex].bottom,
-          transition:
-            hedefIndex === 0
-              ? 'none'
-              : `left ${segmentSuresi(hedefIndex, hiz)}s linear, bottom ${segmentSuresi(hedefIndex, hiz)}s linear`,
-        }}
-        onTransitionEnd={duragaVardi}
-      >
-        <IsilYurume isPlaying={canli && yuruyor} width="100%" frameSuresiMs={frameSuresi} />
-      </div>
+      {/* ===== IŞIL (z-10, çimenin önünde) — soldan sağa sürekli yürüyüş.
+          Konum + kare TEK rAF döngüsünde (IsilGezinti) → asla kaymaz. ===== */}
+      <IsilGezinti
+        canli={canli}
+        yuruyor={yuruyusAktif}
+        frameSuresiMs={frameSuresi}
+        yuruSureMs={yuruSuresiMs(hiz)}
+      />
 
-      {/* ===== CANIM (z-30) — dokununca Işıl'ı çağırır ===== */}
+      {/* ===== CANIM (z-30) — dokununca Işıl'ı yürütür (responsive: cqw) ===== */}
       <button
         onClick={canimaTiklandi}
         aria-label="Canım'a dokun"
         disabled={!canli}
-        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
-          }`}
+        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${
+          canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
+        }`}
         style={{ animationDelay: '1.2s' }}
       >
-        {canli && hedefIndex === 0 && (
-          <span className="animate-kalp mb-1 rounded-full bg-white/90 px-3 py-1 font-baslik text-xs font-bold text-seker shadow-md md:text-sm">
+        {canli && !yuruyusAktif && (
+          <span
+            className="animate-kalp rounded-full bg-white/90 font-baslik font-bold text-seker shadow-md"
+            style={{ marginBottom: '0.6cqw', fontSize: '2.1cqw', padding: '0.3cqw 1.2cqw' }}
+          >
             Bana dokun! 👆
           </span>
         )}
-        <div className="flex h-24 w-20 items-center justify-center rounded-[45%] border-4 border-dashed border-cimen bg-white/70 backdrop-blur-sm md:h-36 md:w-28">
-          <span className="text-4xl md:text-5xl">🌸</span>
+        <div
+          className="flex items-center justify-center rounded-[45%] border-dashed border-cimen bg-white/70 backdrop-blur-sm"
+          style={{ width: '8cqw', height: '10cqw', borderWidth: '0.45cqw' }}
+        >
+          <span style={{ fontSize: '4.5cqw', lineHeight: 1 }}>🌸</span>
         </div>
-        <span className="mt-2 rounded-full bg-cimen px-4 py-1 font-baslik text-sm font-bold text-white shadow-md md:text-base">
+        <span
+          className="rounded-full bg-cimen font-baslik font-bold text-white shadow-md"
+          style={{ marginTop: '0.7cqw', fontSize: '2.4cqw', padding: '0.35cqw 1.5cqw' }}
+        >
           Canım
         </span>
       </button>
@@ -265,6 +228,102 @@ function SevgiSahne1({ canli = true }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------
+   IŞIL GEZİNTİ — konum + kare aynı rAF döngüsünde (senkron, kaymaz)
+
+   - Konum: translate3d(px) ile (GPU; left/top değil) → will-change:transform.
+     Menzil sahne genişliğinin oranı; px değeri ResizeObserver ile önbelleğe
+     alınır (rAF içinde layout okuması yapılmaz → thrashing yok).
+   - Kare: IsilYurume'ye ref ile kareGoster(i) (src değişmez, opacity).
+   - İlerleme süreyle MODULO alınır → sağ uca varınca otomatik BAŞA ışınlanır
+     ve tekrar sağa yürür; kare sayacı sürekli akar (bacaklar hep oynar).
+   - Ana iş parçacığı takılırsa konum DA kare DE bir sonraki tick'te gerçek
+     süreye göre birlikte ilerler → "bacak durur, gövde kayar" olmaz.
+   - prefers-reduced-motion: yürüme yok, Işıl başlangıçta duruş karesinde durur.
+---------------------------------------------------------------- */
+function IsilGezinti({ canli, yuruyor, frameSuresiMs, yuruSureMs }) {
+  const sarmaRef = useRef(null) // konumlanan dış sarmalayıcı (transform)
+  const isilRef = useRef(null) // IsilYurume kontrollü handle
+  const genislikRef = useRef(0) // sahne genişliği (px) — önbellek
+  const sureRef = useRef(frameSuresiMs)
+  const yuruSureRef = useRef(yuruSureMs)
+  sureRef.current = frameSuresiMs
+  yuruSureRef.current = yuruSureMs
+
+  const azalt = useHareketAzalt()
+  const yurumeli = canli && yuruyor && !azalt
+  const yurumeliRef = useRef(yurumeli)
+  yurumeliRef.current = yurumeli
+
+  // Sahne genişliğini ölç (mount + resize) → translate3d px değeri için
+  useEffect(() => {
+    const sarma = sarmaRef.current
+    const ebeveyn = sarma?.parentElement
+    if (!ebeveyn) return
+    const olc = () => {
+      genislikRef.current = ebeveyn.clientWidth
+    }
+    olc()
+    const ro = new ResizeObserver(olc)
+    ro.observe(ebeveyn)
+    return () => ro.disconnect()
+  }, [])
+
+  // TEK rAF döngüsü: konum (translate3d) + kare birlikte
+  useEffect(() => {
+    if (ISIL_KARE_SAYISI === 0) return
+    let rafId
+    let baslangic
+
+    const tik = (now) => {
+      rafId = requestAnimationFrame(tik)
+      const sarma = sarmaRef.current
+      if (!yurumeliRef.current) {
+        baslangic = undefined
+        if (sarma) sarma.style.transform = 'translate3d(0,0,0)'
+        isilRef.current?.kareGoster(0)
+        return
+      }
+      if (baslangic === undefined) baslangic = now
+      const gecen = now - baslangic
+      // Kare (sürekli akar)
+      const idx = Math.floor(gecen / sureRef.current) % ISIL_KARE_SAYISI
+      isilRef.current?.kareGoster(idx)
+      // Konum (süreyle modulo → uçta başa ışınlanır)
+      const ilerleme = (gecen % yuruSureRef.current) / yuruSureRef.current
+      const x = ilerleme * genislikRef.current * ISIL_MENZIL_FRAC
+      if (sarma) sarma.style.transform = `translate3d(${x}px,0,0)`
+    }
+    rafId = requestAnimationFrame(tik)
+
+    // Sekmeye dönünce zamanı sıfırla (arka planda uzun kaldıysa sıçramasın)
+    const gorunur = () => {
+      if (document.visibilityState === 'visible') baslangic = undefined
+    }
+    document.addEventListener('visibilitychange', gorunur)
+    return () => {
+      cancelAnimationFrame(rafId)
+      document.removeEventListener('visibilitychange', gorunur)
+    }
+  }, [])
+
+  return (
+    <div
+      ref={sarmaRef}
+      className="absolute z-10"
+      style={{
+        width: ISIL_GENISLIK,
+        left: `${ISIL_BASLANGIC_LEFT}%`,
+        bottom: ISIL_BOTTOM,
+        transform: 'translate3d(0,0,0)',
+        willChange: 'transform',
+      }}
+    >
+      <IsilYurume ref={isilRef} kontrollu width="100%" />
     </div>
   )
 }

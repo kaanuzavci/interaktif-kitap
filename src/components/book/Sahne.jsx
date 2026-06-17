@@ -22,8 +22,14 @@ import { useState } from 'react'
 function Sahne({ sahne, canli = true }) {
   const IcerikBileseni = sahne.icerikBileseni
 
+  // container-type: sahne içindeki tüm ölçüler (yazı/öğe boyutu) artık
+  // "cqw/cqh" ile bu yüzeyin boyutuna göre büyür → telefon/tablette
+  // sağlam, oransal responsive (sabit px/rem yerine).
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{ containerType: 'size', containerName: 'sahne' }}
+    >
       {/* ===== ARKA PLAN =====
           Görsel net ve düz kalır; deforme edilmez. Görsel yoksa
           (basit/kapanış sahneleri) yumuşak bir degrade kullanılır. */}

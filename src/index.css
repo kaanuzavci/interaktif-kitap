@@ -44,6 +44,9 @@
   --animate-tepki-salla: tepkiSalla 0.5s ease-in-out;      /* kilitli kitaba dokununca       */
   --animate-pop-yukari: popYukari 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; /* raf belirir */
   --animate-parla: parla 0.6s ease-out;                    /* dokunmatik öğe parlama tepkisi */
+
+  /* "Buraya dokun" ipucu: nabız atan/genişleyen daire (kütük & uğurböceği) */
+  --animate-dokun-ping: dokunPing 1.6s ease-out infinite;
 }
 
 /* ---------------------------------------------------------------
@@ -161,6 +164,13 @@ body,
   0%   { transform: scale(1);    filter: brightness(1); }
   40%  { transform: scale(1.35); filter: brightness(1.5) drop-shadow(0 0 12px rgba(255,221,150,0.9)); }
   100% { transform: scale(1);    filter: brightness(1); }
+}
+
+/* "Buraya dokun" ipucu: küçük daire büyüyüp solar (radar/nabız hissi) */
+@keyframes dokunPing {
+  0%   { transform: scale(0.45); opacity: 0.85; }
+  70%  { opacity: 0.12; }
+  100% { transform: scale(1.5);  opacity: 0; }
 }
 
 /* ---------------------------------------------------------------

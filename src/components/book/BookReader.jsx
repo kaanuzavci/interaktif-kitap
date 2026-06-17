@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { kitapBul } from '../../data/kitaplar.js'
 import Sahne from './Sahne.jsx'
+import { TiklamaKayitContext } from './tiklamaKayit.js'
 import useSayfaSesi from '../../hooks/useSayfaSesi.js'
 import SoundToggle from '../ui/SoundToggle.jsx'
 import HomeButton from '../ui/HomeButton.jsx'
@@ -45,6 +46,30 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
   const spreadRef = useRef(null) // 16:9 alanı ölçmek için
   const dragRef = useRef(null) // aktif sürükleme bilgisi
   const calSayfaSesi = useSayfaSesi()
+
+  // --- TIKLANABİLİR SPRITE KAYIT DEFTERİ ---
+  // Sahnedeki TiklamaliSprite'lar kendilerini buraya yazar; kitap yüzeyine
+  // gelen pointerdown'ı (capture) burada üstten alta alfa-testiyle deneriz.
+  const kayitRef = useRef(new Map())
+  const kayitApi = useRef({
+    ekle: (id, api) => kayitRef.current.set(id, api),
+    cikar: (id) => kayitRef.current.delete(id),
+  }).current
+
+  // Sprite'a isabet varsa onu oynat + olayı durdur (sürükleme başlamasın).
+  // İsabet yoksa olay normal akar (sayfa çevrilir / çiçeğe dokunulur).
+  const yuzeyPointerDown = (e) => {
+    if (flip) return
+    const adaylar = [...kayitRef.current.values()].filter((a) => a.canli())
+    adaylar.sort((a, b) => b.zIndex - a.zIndex) // üstteki önce
+    for (const a of adaylar) {
+      if (a.hitTest(e.clientX, e.clientY)) {
+        a.oynat()
+        e.stopPropagation()
+        return
+      }
+    }
+  }
 
   const sonSahne = sahneler.length - 1
   const ileriVar = sahneIndex < sonSahne
@@ -184,9 +209,11 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
               'inset 0 -1px 0 rgba(0,0,0,0.2)',
           }}
         >
-          {/* SAYFA ALANI — tam 16:9 (koordinat hizası bozulmaz) */}
+          {/* SAYFA ALANI — tam 16:9 (koordinat hizası bozulmaz)
+              onPointerDownCapture: sprite alfa-testi sürüklemeden ÖNCE çalışır */}
           <div
             ref={spreadRef}
+            onPointerDownCapture={yuzeyPointerDown}
             className="relative overflow-hidden bg-krem"
             style={{
               width: '100%',
@@ -195,57 +222,59 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
               borderRadius: 'clamp(8px, 1.6vmin, 16px)',
             }}
           >
-            {/* ---------- İÇERİK: idle (canlı) VEYA çevirme (statik+yaprak) ---------- */}
-            {!flip ? (
-              // BOŞ ZAMAN: tek canlı sahne yüzeyi (etkileşimler aktif)
-              <div className="absolute inset-0">
-                <Sahne sahne={sahneler[sahneIndex]} canli />
-              </div>
-            ) : (
-              <CevirmeKatmani
-                sahneler={sahneler}
-                sahneIndex={sahneIndex}
-                flip={flip}
-              />
-            )}
+            <TiklamaKayitContext.Provider value={kayitApi}>
+              {/* ---------- İÇERİK: idle (canlı) VEYA çevirme (statik+yaprak) ---------- */}
+              {!flip ? (
+                // BOŞ ZAMAN: tek canlı sahne yüzeyi (etkileşimler aktif)
+                <div className="absolute inset-0">
+                  <Sahne sahne={sahneler[sahneIndex]} canli />
+                </div>
+              ) : (
+                <CevirmeKatmani
+                  sahneler={sahneler}
+                  sahneIndex={sahneIndex}
+                  flip={flip}
+                />
+              )}
 
-            {/* ---------- CİLT + KAVİS GÖLGELERİ (non-destructive) ---------- */}
-            <KavisGolge />
+              {/* ---------- CİLT + KAVİS GÖLGELERİ (non-destructive) ---------- */}
+              <KavisGolge />
 
-            {/* ---------- SÜRÜKLEME BÖLGELERİ (köşeler/kenarlar) ---------- */}
-            {!flip && (
-              <>
-                {/* İleri: sağ kenar + sağ alt köşe ipucu */}
-                {ileriVar && (
-                  <div
-                    onPointerDown={(e) => surukleBasla(e, 'ileri')}
-                    className="absolute bottom-0 right-0 top-0 z-20 w-[16%] cursor-grab touch-none active:cursor-grabbing"
-                    role="button"
-                    aria-label="Sonraki sayfa (sürükle)"
-                  >
-                    {/* Sağ alt köşede kıvrılan sayfa ipucu */}
+              {/* ---------- SÜRÜKLEME BÖLGELERİ (köşeler/kenarlar) ---------- */}
+              {!flip && (
+                <>
+                  {/* İleri: sağ kenar + sağ alt köşe ipucu */}
+                  {ileriVar && (
                     <div
-                      className="animate-sallan absolute bottom-0 right-0 h-12 w-12 md:h-16 md:w-16"
-                      style={{
-                        background:
-                          'linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.85) 50%, #f0e2c8 78%, #d9c39c 100%)',
-                        borderTopLeftRadius: '80%',
-                        boxShadow: '-3px -3px 8px rgba(0,0,0,0.18)',
-                      }}
+                      onPointerDown={(e) => surukleBasla(e, 'ileri')}
+                      className="absolute bottom-0 right-0 top-0 z-20 w-[16%] cursor-grab touch-none active:cursor-grabbing"
+                      role="button"
+                      aria-label="Sonraki sayfa (sürükle)"
+                    >
+                      {/* Sağ alt köşede kıvrılan sayfa ipucu */}
+                      <div
+                        className="animate-sallan absolute bottom-0 right-0 h-12 w-12 md:h-16 md:w-16"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.85) 50%, #f0e2c8 78%, #d9c39c 100%)',
+                          borderTopLeftRadius: '80%',
+                          boxShadow: '-3px -3px 8px rgba(0,0,0,0.18)',
+                        }}
+                      />
+                    </div>
+                  )}
+                  {/* Geri: sol kenar */}
+                  {geriVar && (
+                    <div
+                      onPointerDown={(e) => surukleBasla(e, 'geri')}
+                      className="absolute bottom-0 left-0 top-0 z-20 w-[16%] cursor-grab touch-none active:cursor-grabbing"
+                      role="button"
+                      aria-label="Önceki sayfa (sürükle)"
                     />
-                  </div>
-                )}
-                {/* Geri: sol kenar */}
-                {geriVar && (
-                  <div
-                    onPointerDown={(e) => surukleBasla(e, 'geri')}
-                    className="absolute bottom-0 left-0 top-0 z-20 w-[16%] cursor-grab touch-none active:cursor-grabbing"
-                    role="button"
-                    aria-label="Önceki sayfa (sürükle)"
-                  />
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
+            </TiklamaKayitContext.Provider>
           </div>
         </div>
       </div>
