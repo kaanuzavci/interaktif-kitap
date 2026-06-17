@@ -6,5 +6,8 @@ dist/
 # Optimizasyon scriptinin aldığı orijinal görsel yedekleri (~50MB, gereksiz)
 asset-yedek/
 
+# Yanlışlıkla projeye dahil edilen Downloads klasörü (~4.7GB, projeyle ilgisiz)
+src/assets/backgrounds/Downloads/
+
 # Geliştirme scriptleri (çalışma zamanında gerekmez)
 scripts/
