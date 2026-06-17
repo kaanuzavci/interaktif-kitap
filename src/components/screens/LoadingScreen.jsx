@@ -90,9 +90,8 @@ function LoadingScreen({ onReady, hareketAzalt = false }) {
 
   return (
     <div
-      className={`absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden transition-opacity duration-500 ${
-        cikis ? 'opacity-0' : 'opacity-100'
-      }`}
+      className={`absolute inset-0 z-50 flex flex-col items-center justify-center overflow-hidden transition-opacity duration-500 ${cikis ? 'opacity-0' : 'opacity-100'
+        }`}
     >
       {/* Pastel gökyüzü — giriş ekranıyla aynı atmosfer, sade */}
       <div className="absolute inset-0 bg-gradient-to-b from-gokyuzu via-[#eaf5ff] to-krem" />

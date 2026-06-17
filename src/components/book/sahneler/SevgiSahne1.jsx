@@ -149,9 +149,8 @@ function SevgiSahne1({ canli = true }) {
         onClick={canimaTiklandi}
         aria-label="Canım'a dokun"
         disabled={!canli}
-        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${
-          canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
-        }`}
+        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
+          }`}
         style={{ animationDelay: '1.2s' }}
       >
         {canli && !yuruyusAktif && (

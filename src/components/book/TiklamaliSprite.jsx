@@ -1,5 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { TiklamaKayitContext } from './tiklamaKayit.js'
+import { opakMerkez, noktaDolu } from './alfaHarita.js'
+import DokunIpucu from './DokunIpucu.jsx'
 
 /* ===============================================================
    TIKLAMALI SPRITE — tam-kare bir kare dizisini sahneye ölçekleyip
@@ -12,71 +14,24 @@ import { TiklamaKayitContext } from './tiklamaKayit.js'
      süre dinlenir (donguArasiMs), tekrar oynar… (tekrar dokunmaya gerek
      yok, ipucu daireleri kaybolur).
 
+   GİZLİ BAŞLAT (gizliBaslat):
+   - true ise sprite AÇILIŞTA GÖRÜNMEZ (yalnızca dokun halkası durur);
+     ilk dokunuşta yumuşakça belirir VE döngüye girer. Tıklama yine alfa
+     testiyle (dinlenme karesinin silüeti) çalışır — görünmez olması
+     yalnızca opaklıktır, kutu ve alfa haritası yerinde durur.
+
    PİKSEL-HASSAS TIKLAMA:
    - Dikdörtgen hotspot YOK. Tıklama, sprite'ın O AN GÖSTERİLEN karesinin
      ALFA kanalına göre test edilir (BookReader yönetir). Yalnızca görünen
      (saydam olmayan) pikseller tıklanabilir; etrafı/altı değil.
-   - Ölçüm oransal (getBoundingClientRect + alfa haritası) olduğundan her
-     ekran boyutunda (telefon/tablet) birebir doğrudur.
+   - Alfa mantığı paylaşımlı alfaHarita.js'tendir (TiklanirGorsel ile aynı).
 
    SAĞLAMLIK: Kare animasyonu React render döngüsünden bağımsız tek bir
    rAF döngüsüdür; gerçek geçen süreye göre (modulo toplam) kare seçer.
 
    Props: frames, olcek, x, y, frameSuresiMs, bekleKare, beklemeSuresiMs,
-          donguArasiMs, canli, zIndex
+          donguArasiMs, canli, zIndex, gizliBaslat
 =============================================================== */
-
-// Alfa haritası çözünürlüğü (px). Doğal kare 960px.
-const HIT_GENISLIK = 240
-// Bu alfa değerinin (0-255) üstü "dolu/görünen" piksel sayılır (yumuşak
-// kenarları dışarıda bırakacak kadar yüksek → daha keskin silüet).
-const ALFA_ESIK = 40
-// Çok küçük dokunma toleransı (yaklaşık px) — yalnızca anti-alias/keskinlik
-// payı; nesnenin dışına taşmayı önler.
-const DOKUNMA_TOLERANS_PX = 4
-
-// --- Alfa haritası + opak sınır (bbox) önbelleği (kare URL'sine göre) ---
-const alfaCache = new Map()
-let paylasilanCanvas = null
-let paylasilanCtx = null
-
-function alfaHaritasiAl(im) {
-  if (!im || !im.complete || !im.naturalWidth) return null
-  const onbellek = alfaCache.get(im.src)
-  if (onbellek) return onbellek
-  if (!paylasilanCanvas) {
-    paylasilanCanvas = document.createElement('canvas')
-    paylasilanCtx = paylasilanCanvas.getContext('2d', { willReadFrequently: true })
-  }
-  const olcek = HIT_GENISLIK / im.naturalWidth
-  const w = HIT_GENISLIK
-  const h = Math.max(1, Math.round(im.naturalHeight * olcek))
-  paylasilanCanvas.width = w
-  paylasilanCanvas.height = h
-  paylasilanCtx.clearRect(0, 0, w, h)
-  try {
-    paylasilanCtx.drawImage(im, 0, 0, w, h)
-    const data = paylasilanCtx.getImageData(0, 0, w, h).data
-    // Opak piksellerin sınır kutusu (ipucu dairesini ortalamak için)
-    let minx = w, miny = h, maxx = -1, maxy = -1
-    for (let yy = 0; yy < h; yy++) {
-      for (let xx = 0; xx < w; xx++) {
-        if (data[(yy * w + xx) * 4 + 3] > ALFA_ESIK) {
-          if (xx < minx) minx = xx
-          if (xx > maxx) maxx = xx
-          if (yy < miny) miny = yy
-          if (yy > maxy) maxy = yy
-        }
-      }
-    }
-    const bbox = maxx >= 0 ? { minx, miny, maxx, maxy } : null
-    const harita = { w, h, data, bbox }
-    alfaCache.set(im.src, harita)
-    return harita
-  } catch {
-    return null
-  }
-}
 
 function TiklamaliSprite({
   frames,
@@ -89,6 +44,7 @@ function TiklamaliSprite({
   donguArasiMs = 0,
   canli = true,
   zIndex = 10,
+  gizliBaslat = false,
 }) {
   const imgRef = useRef(null)
   const imgObjRef = useRef([]) // alfa testi için Image nesneleri
@@ -132,13 +88,8 @@ function TiklamaliSprite({
     })
     const im0 = imgObjRef.current[0]
     const merkeziHesapla = () => {
-      const h = alfaHaritasiAl(im0)
-      if (h && h.bbox) {
-        setMerkez({
-          cx: (h.bbox.minx + h.bbox.maxx) / 2 / h.w,
-          cy: (h.bbox.miny + h.bbox.maxy) / 2 / h.h,
-        })
-      }
+      const m = opakMerkez(im0)
+      if (m) setMerkez(m)
     }
     if (im0 && im0.complete && im0.naturalWidth) merkeziHesapla()
     else if (im0) im0.onload = merkeziHesapla
@@ -187,37 +138,10 @@ function TiklamaliSprite({
     if (!rafRef.current) rafRef.current = requestAnimationFrame(tik)
   }
 
-  // Piksel-hassas isabet testi: ekran noktasını sprite'ın doğal pikseline
-  // çevir, O AN gösterilen karenin alfasına bak (küçük tolerans ile).
-  const noktaDolu = (cx, cy) => {
-    const img = imgRef.current
-    if (!img) return false
-    const r = img.getBoundingClientRect()
-    if (r.width === 0 || r.height === 0) return false
-    const fx = (cx - r.left) / r.width
-    const fy = (cy - r.top) / r.height
-    if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return false
-    const im = imgObjRef.current[aktifKareRef.current] || imgObjRef.current[0]
-    const harita = alfaHaritasiAl(im)
-    if (!harita) return true
-    const { w, h, data } = harita
-    const gx = Math.min(w - 1, Math.max(0, Math.round(fx * (w - 1))))
-    const gy = Math.min(h - 1, Math.max(0, Math.round(fy * (h - 1))))
-    const slop = Math.max(0, Math.round((DOKUNMA_TOLERANS_PX / r.width) * w))
-    for (let dy = -slop; dy <= slop; dy++) {
-      for (let dx = -slop; dx <= slop; dx++) {
-        const px = gx + dx
-        const py = gy + dy
-        if (px < 0 || px >= w || py < 0 || py >= h) continue
-        if (data[(py * w + px) * 4 + 3] > ALFA_ESIK) return true
-      }
-    }
-    return false
-  }
-
   // En güncel fonksiyonları ref'te tut (kayıt defteri stale closure yakalamasın)
   const fnRef = useRef({})
-  fnRef.current.hitTest = noktaDolu
+  fnRef.current.hitTest = (cx, cy) =>
+    noktaDolu(imgRef.current, imgObjRef.current[aktifKareRef.current] || imgObjRef.current[0], cx, cy)
   fnRef.current.oynat = oynat
 
   // Kayıt defterine yaz / sil
@@ -247,6 +171,9 @@ function TiklamaliSprite({
 
   if (frames.length === 0) return null
 
+  // gizliBaslat: ilk dokunuşa (oynadi) kadar görünmez; sonra yumuşakça belir.
+  const gorunur = !gizliBaslat || oynadi
+
   // Dinlenme karesinin opak merkezi → ipucu dairesinin sahne-% konumu.
   // Kutu sahnede: sol=x%, üst=y%, genişlik/yükseklik = 100*olcek% olduğundan
   // merkez = x + cx*100*olcek (yatay), y + cy*100*olcek (dikey).
@@ -254,6 +181,7 @@ function TiklamaliSprite({
     merkez && {
       left: `${x + merkez.cx * 100 * olcek}%`,
       top: `${y + merkez.cy * 100 * olcek}%`,
+      zIndex: zIndex + 3,
     }
 
   return (
@@ -268,29 +196,13 @@ function TiklamaliSprite({
           zIndex,
           transformOrigin: 'top left',
           transform: `translate(${x}%, ${y}%) scale(${olcek})`,
+          opacity: gorunur ? 1 : 0,
+          transition: 'opacity 360ms ease',
         }}
       />
 
       {/* DOKUN İPUCU — ilk dokunuşa kadar nesnenin üstünde nabız atan daireler */}
-      {canli && !oynadi && ipucuStili && (
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            ...ipucuStili,
-            width: '6cqw',
-            height: '6cqw',
-            transform: 'translate(-50%, -50%)',
-            zIndex: zIndex + 3,
-          }}
-        >
-          <span className="animate-dokun-ping absolute inset-0 rounded-full border-2 border-white" />
-          <span
-            className="animate-dokun-ping absolute inset-0 rounded-full border-2 border-gunes"
-            style={{ animationDelay: '0.75s' }}
-          />
-          <span className="absolute left-1/2 top-1/2 h-[26%] w-[26%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/85 shadow" />
-        </div>
-      )}
+      {canli && !oynadi && ipucuStili && <DokunIpucu style={ipucuStili} />}
     </>
   )
 }

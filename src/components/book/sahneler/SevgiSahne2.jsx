@@ -1,4 +1,5 @@
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
+import TiklanirGorsel from '../TiklanirGorsel.jsx'
 import kalemler from '../../../assets/backgrounds/kalemler.png'
 
 /* ===============================================================
@@ -9,21 +10,22 @@ import kalemler from '../../../assets/backgrounds/kalemler.png'
 
    Katmanlar (alttan üste):
      arka_plan2.jpg  (Sahne çiziyor)          — oda + pencere + masa
-     kalemler.png    (bu dosya, statik)       — masada kalem kabı + kalemler
-     Canım (çiçek)   (TiklamaliSprite)        — sağda; DOKUNUNCA göz kırpar
+     kalemler.png    (TiklanirGorsel)         — masada; GİZLİ, dokununca belirir
+     Canım (çiçek)   (TiklamaliSprite)        — sağda; GİZLİ, dokununca belirir+kırpar
      Işıl (çiçekle)  (TiklamaliSprite)        — solda; DOKUNUNCA çiçeği uzatır
 
-   ETKİLEŞİM (1. sahneyle BİREBİR aynı mantık):
-   - Açılışta animasyonlar OYNAMAZ; dinlenme karesinde (poz 1) durur ve
-     üstlerinde nabız atan "dokun" halkası görünür.
-   - İlk dokunuşta (yalnızca görünen piksellerde — TiklamaliSprite +
-     BookReader alfa-testi) DÖNGÜYE girer ve sürekli oynar; halka kaybolur.
-   - Tıklama yönlendirmesi/halka/alfa-testi TiklamaliSprite + TiklamaKayit
-     + BookReader.yuzeyPointerDown üçlüsünden gelir (tavşan/uğurböceğiyle aynı).
+   ETKİLEŞİM:
+   - KALEMLER ve CANIM açılışta GÖRÜNMEZ; yalnızca yerlerinde nabız atan
+     "dokun" halkası durur. Boşken o noktaya dokununca belirirler (Canım
+     ayrıca göz kırpma döngüsüne girer; kalemler sadece görünür/kalır).
+   - IŞIL değişmedi: dinlenme karesinde durur, dokununca çiçeği uzatır.
+   - İlk dokunuş yalnızca görünen piksellerde çalışır (alfaHarita.js +
+     BookReader alfa-testi); halka kaybolur. Sahne her açılışta sıfırdan
+     kurulduğu için (BookReader key) her gelişte yeniden gizli başlar.
 
    ───────────────────────────────────────────────────────────────
    👉 KONUMLARI BURADAN AYARLA: Sayılar sahne %'sidir.
-      - KALEMLER: statik <img> (left/top/width).
+      - KALEMLER: TiklanirGorsel (left/top/width).
       - CICEK / ISIL: TiklamaliSprite ölçek+konumu → olcek (büyüklük, 1=tam),
         x (sağ/sol %), y (aşağı/yukarı %). Kare tuvali tam 16:9 olduğundan
         olcek=1 sahneyi tam doldurur; x/y kareyi kaydırır.
@@ -51,7 +53,7 @@ const isilKareleri = kareleriTopla(
   }),
 )
 
-// ✏️ KALEMLER (statik) — masaya oturan kalemler. left/top: sol-üst köşe (%).
+// ✏️ KALEMLER (dokununca belirir) — masaya oturan kalemler. left/top: sol-üst köşe (%).
 const KALEMLER = { left: '-3%', top: '60%', width: '20%' }
 
 // 🌻 CANIM (büyük çiçek, sağda) — olcek=büyüklük, x=sağ/sol, y=aşağı/yukarı (%).
@@ -65,22 +67,27 @@ const ISIL = { olcek: 1, x: -0.2, y: 0 }
    ek olarak beklemeSuresiMs kadar daha durur. Böylece:
    - Canım: poz1 (gözler açık) uzun, poz2 (kapalı) kısa → doğal göz kırpma.
    - Işıl : poz1 (dik tutuş) uzun, poz2 (öne uzatma) → sakin "al bunu". */
-const CICEK_TEMPO = { frameSuresiMs: 200, bekleKare: 0, beklemeSuresiMs: 2400 } // 2600 açık / 200 kapalı
-const ISIL_TEMPO = { frameSuresiMs: 1500, bekleKare: 0, beklemeSuresiMs: 500 } // 2000 tutuş / 1500 uzatma
+const CICEK_TEMPO = { frameSuresiMs: 180, bekleKare: 0, beklemeSuresiMs: 2000 } // 2180 açık / 180 kapalı (biraz hızlandı)
+const ISIL_TEMPO = { frameSuresiMs: 1300, bekleKare: 0, beklemeSuresiMs: 450 } // 1750 tutuş / 1300 uzatma (biraz hızlandı)
 
 function SevgiSahne2({ canli = true }) {
   return (
     <div className="absolute inset-0">
-      {/* ===== KALEMLER (masada; statik, en altta) ===== */}
-      <img
+      {/* ===== KALEMLER (masada) — açılışta GİZLİ; dokununca belirir =====
+          Statik değil: yerinde "dokun" halkası durur, dokununca kalemler
+          görünür ve kalır (animasyon yok). */}
+      <TiklanirGorsel
         src={kalemler}
-        alt=""
-        draggable={false}
-        className="pointer-events-none absolute select-none"
-        style={{ left: KALEMLER.left, top: KALEMLER.top, width: KALEMLER.width, zIndex: 10 }}
+        left={KALEMLER.left}
+        top={KALEMLER.top}
+        width={KALEMLER.width}
+        canli={canli}
+        zIndex={10}
       />
 
-      {/* ===== CANIM (sağ) — dokununca göz kırpma döngüsü ===== */}
+      {/* ===== CANIM (sağ) — açılışta GİZLİ; dokununca belirip göz kırpar =====
+          gizliBaslat: ilk dokunuşa kadar görünmez (yalnızca halka); dokununca
+          belirir VE göz kırpma döngüsü başlar. */}
       <TiklamaliSprite
         frames={cicekKareleri}
         olcek={CICEK.olcek}
@@ -92,6 +99,7 @@ function SevgiSahne2({ canli = true }) {
         donguArasiMs={0}
         canli={canli}
         zIndex={15}
+        gizliBaslat
       />
 
       {/* ===== IŞIL (sol-orta) — dokununca tutuş/uzatış döngüsü ===== */}

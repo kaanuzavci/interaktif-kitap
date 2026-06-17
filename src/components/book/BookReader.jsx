@@ -225,8 +225,12 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
             <TiklamaKayitContext.Provider value={kayitApi}>
               {/* ---------- İÇERİK: idle (canlı) VEYA çevirme (statik+yaprak) ---------- */}
               {!flip ? (
-                // BOŞ ZAMAN: tek canlı sahne yüzeyi (etkileşimler aktif)
-                <div className="absolute inset-0">
+                // BOŞ ZAMAN: tek canlı sahne yüzeyi (etkileşimler aktif).
+                // key={sahneIndex}: sahne her değiştiğinde (özellikle hareket
+                // azalt modunda, çevirme animasyonu atlanınca) sahne SIFIRDAN
+                // kurulur → tıklanınca beliren öğeler (kalemler/çiçek) ve
+                // animasyonlar her sayfaya gelişte yeniden gizli/başlangıçta olur.
+                <div key={sahneIndex} className="absolute inset-0">
                   <Sahne sahne={sahneler[sahneIndex]} canli />
                 </div>
               ) : (
