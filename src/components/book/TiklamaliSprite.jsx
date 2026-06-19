@@ -46,6 +46,7 @@ function TiklamaliSprite({
   canli = true,
   zIndex = 10,
   gizliBaslat = false,
+  ilkDokunusKaresi = 0, // ilk dokunuşta bu kareden başla (indeks); sonraki turlar normal
 }) {
   const imgRef = useRef(null)
   const imgObjRef = useRef([]) // alfa testi için Image nesneleri
@@ -139,7 +140,17 @@ function TiklamaliSprite({
     // İlk dokunuş parıltısı (yıldızlar) — öğe "parıltıyla gelmiş" gibi olur
     setParilti(true)
     setTimeout(() => setParilti(false), PARILTI_SURE_MS)
-    baslangicRef.current = performance.now()
+    // İlk dokunuşta istenen kareden başla: zaman çizelgesini o karenin
+    // başlangıç anına ofsetleyerek ilk gösterilen kare ilkDokunusKaresi olur.
+    // Sonraki turlar modulo döngü ile normal (kare 0'dan) oynar.
+    const simdi = performance.now()
+    if (ilkDokunusKaresi > 0 && dongu.seg.length > ilkDokunusKaresi) {
+      // İlk N karenin toplam süresini hesapla → zamanı o kadar geri al
+      const ofset = ilkDokunusKaresi > 0 ? dongu.seg[ilkDokunusKaresi - 1].until : 0
+      baslangicRef.current = simdi - ofset
+    } else {
+      baslangicRef.current = simdi
+    }
     if (!rafRef.current) rafRef.current = requestAnimationFrame(tik)
   }
 

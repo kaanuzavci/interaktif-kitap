@@ -102,7 +102,8 @@ function SevgiSahne2({ canli = true }) {
         gizliBaslat
       />
 
-      {/* ===== IŞIL (sol-orta) — dokununca tutuş/uzatış döngüsü ===== */}
+      {/* ===== IŞIL (sol-orta) — dokununca tutuş/uzatış döngüsü =====
+          İlk dokunuşta pose 02 (kare 1) ile başlar; sonraki turlar normal 01→02. */}
       <TiklamaliSprite
         frames={isilKareleri}
         olcek={ISIL.olcek}
@@ -114,6 +115,7 @@ function SevgiSahne2({ canli = true }) {
         donguArasiMs={0}
         canli={canli}
         zIndex={20}
+        ilkDokunusKaresi={1}
       />
     </div>
   )
