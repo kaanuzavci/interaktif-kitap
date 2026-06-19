@@ -150,14 +150,14 @@ function HomeScreen({
       ============================================================ */}
       <div className="animate-fener-salla absolute left-1/2 top-0 z-10 origin-top -translate-x-1/2">
         {/* Askı ipi */}
-        <div className="mx-auto w-px bg-gece/40" style={{ height: 'clamp(28px, 9vh, 80px)' }} />
+        <div className="mx-auto w-px bg-gece/40" style={{ height: 'clamp(14px, 6vh, 80px)' }} />
         {/* Fener gövdesi */}
         <div className="relative -mt-px flex flex-col items-center">
-          <div className="h-1.5 w-7 rounded-t bg-gece/70" />
-          <div className="relative flex h-12 w-9 items-center justify-center rounded-xl border-2 border-gece/50 bg-gradient-to-b from-gunes to-[#f5b94a] shadow-[0_0_28px_rgba(255,209,102,0.85)] md:h-14 md:w-11">
-            <span className="animate-parilti text-lg md:text-xl">🔆</span>
+          <div className="h-1 w-5 rounded-t bg-gece/70 md:h-1.5 md:w-7" />
+          <div className="relative flex h-8 w-6 items-center justify-center rounded-xl border-2 border-gece/50 bg-gradient-to-b from-gunes to-[#f5b94a] shadow-[0_0_28px_rgba(255,209,102,0.85)] md:h-14 md:w-11">
+            <span className="animate-parilti text-sm md:text-xl">🔆</span>
           </div>
-          <div className="h-1.5 w-4 rounded-b bg-gece/70" />
+          <div className="h-1 w-3 rounded-b bg-gece/70 md:h-1.5 md:w-4" />
         </div>
         {/* Fenerin döktüğü sıcak ışık havuzu */}
         <div className="absolute left-1/2 top-full -z-10 h-[55vh] w-[60vh] -translate-x-1/2 rounded-full bg-gunes/20 blur-3xl" />
@@ -166,21 +166,21 @@ function HomeScreen({
       {/* ============================================================
           İÇERİK (z-20)
       ============================================================ */}
-      <div className="relative z-20 flex h-full w-full flex-col items-center justify-between px-4 py-3 md:px-8 md:py-5">
+      <div className="ana-icerik relative z-20 flex h-full w-full flex-col items-center justify-between overflow-y-auto px-4 py-2 md:px-8 md:py-5">
         {/* ----- BAŞLIK ----- */}
-        <header className="animate-belir-yukari flex flex-col items-center pt-6 md:pt-8">
-          <h1 className="font-baslik text-3xl font-extrabold tracking-tight text-gece drop-shadow-[2px_3px_0_rgba(255,255,255,0.7)] md:text-5xl">
+        <header className="animate-belir-yukari flex shrink-0 flex-col items-center pt-2 md:pt-8">
+          <h1 className="font-baslik text-2xl font-extrabold tracking-tight text-gece drop-shadow-[2px_3px_0_rgba(255,255,255,0.7)] md:text-5xl">
             Işıl ile Değerler
           </h1>
-          <p className="mt-2 rounded-full bg-seker/90 px-5 py-1 font-baslik text-sm font-bold text-white shadow-md md:text-base">
+          <p className="mt-1 rounded-full bg-seker/90 px-4 py-0.5 font-baslik text-xs font-bold text-white shadow-md md:mt-2 md:px-5 md:py-1 md:text-base">
             Bir kitap seç, maceraya başla 🌈
           </p>
         </header>
 
         {/* ----- RAF + KİTAPLAR ----- */}
-        <main className="flex w-full max-w-4xl flex-col items-center">
+        <main className="flex w-full max-w-4xl shrink flex-col items-center">
           {/* Kitap kapakları rafın üstünde dik durur */}
-          <div className="flex w-full items-end justify-center gap-3 px-2 md:gap-6">
+          <div className="flex w-full items-end justify-center gap-2 px-2 md:gap-6">
             {KITAPLAR.map((kitap, i) => {
               const aktif = kitap.durum === 'aktif'
               const aciliyor = acilan?.id === kitap.id
@@ -224,33 +224,33 @@ function HomeScreen({
           </div>
 
           {/* AHŞAP RAF — kitapların altında, hafif 3B kalınlık */}
-          <div className="animate-pop-yukari mt-1 w-full max-w-4xl" style={{ animationDelay: '0.1s' }}>
+          <div className="animate-pop-yukari mt-0.5 w-full max-w-4xl md:mt-1" style={{ animationDelay: '0.1s' }}>
             {/* Üst yüzey */}
-            <div className="h-3 w-full rounded-t-sm bg-gradient-to-b from-[#c98a52] to-[#a96f3e] shadow-inner" />
+            <div className="h-2 w-full rounded-t-sm bg-gradient-to-b from-[#c98a52] to-[#a96f3e] shadow-inner md:h-3" />
             {/* Ön kenar (kalınlık) */}
-            <div className="h-4 w-full rounded-b-md bg-gradient-to-b from-[#90582f] to-[#73441f] shadow-[0_10px_18px_rgba(70,40,15,0.35)]" />
+            <div className="h-3 w-full rounded-b-md bg-gradient-to-b from-[#90582f] to-[#73441f] shadow-[0_10px_18px_rgba(70,40,15,0.35)] md:h-4" />
             {/* İki küçük destek bağı */}
             <div className="mx-auto flex w-[88%] justify-between">
-              <div className="h-6 w-3 rounded-b-md bg-[#73441f]" />
-              <div className="h-6 w-3 rounded-b-md bg-[#73441f]" />
+              <div className="h-4 w-2 rounded-b-md bg-[#73441f] md:h-6 md:w-3" />
+              <div className="h-4 w-2 rounded-b-md bg-[#73441f] md:h-6 md:w-3" />
             </div>
           </div>
         </main>
 
         {/* ----- FOOTER ----- */}
         <footer
-          className="animate-belir-yukari flex w-full max-w-4xl flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-full bg-gece/80 px-5 py-1.5 text-center font-metin text-xs text-white shadow-lg backdrop-blur-sm md:text-sm"
+          className="animate-belir-yukari flex w-full max-w-4xl shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 rounded-full bg-gece/80 px-4 py-1 text-center font-metin text-[10px] text-white shadow-lg backdrop-blur-sm md:gap-x-4 md:gap-y-1 md:px-5 md:py-1.5 md:text-sm"
           style={{ animationDelay: '0.5s' }}
         >
-          <span>© 2026 Işıl ile Değerler · Tüm hakları saklıdır</span>
+          <span>© 2026 Işıl ile Değerler</span>
           <span className="hidden opacity-40 md:inline">|</span>
-          <span className="flex gap-3">
+          <span className="flex gap-2 md:gap-3">
             <button onClick={() => setYasalAcik('gizlilik')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">Gizlilik</button>
             <button onClick={() => setYasalAcik('kullanim')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">Kullanım</button>
             <button onClick={() => setYasalAcik('iletisim')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">İletişim</button>
           </span>
           <span className="hidden opacity-40 md:inline">|</span>
-          <span className="opacity-60">v0.2</span>
+          <span className="hidden opacity-60 md:inline">v0.2</span>
         </footer>
       </div>
 

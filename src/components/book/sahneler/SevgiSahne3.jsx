@@ -119,12 +119,14 @@ function SevgiSahne3({ canli = true }) {
       {/* ===== DUMAN/KOKU (pastadan tüter) — tam-kaplama; KEK tıklayınca döngüde =====
           duman_animasyon tuvali 16:9 ve duman tam kek konumundan yükselir,
           bu yüzden tam-kaplama yeterli (ayrı konumlama gerekmez). frame_01
-          boş olduğundan tetiklenene kadar görünmez. duraklat: Işıl tutulurken
-          kare donar, bırakılınca kaldığı yerden devam eder. */}
+          boş olduğundan tetiklenene kadar görünmez. gizle: Işıl tutulurken
+          duman tamamen gizlenir, bırakılınca yeniden belirir ve kaldığı
+          yerden devam eder. */}
       <DumanEfekti
         frames={dumanKareleri}
         oynat={dumanAktif && canli}
         duraklat={isilTutuluyor}
+        gizle={isilTutuluyor}
         frameSuresiMs={80}
         style={{ zIndex: 30 }}
       />
@@ -144,7 +146,7 @@ function SevgiSahne3({ canli = true }) {
    sahne açılır açılmaz ekran boyutunda decode edilir; tetiklenince ilk tur
    da kusursuz akar. frame_01 boş olduğundan oynat=false iken görünmez.
 ---------------------------------------------------------------- */
-function DumanEfekti({ frames, oynat, duraklat = false, frameSuresiMs = 80, style }) {
+function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSuresiMs = 80, style }) {
   const imgRefleri = useRef([])
   const aktifRef = useRef(0)
   const oynatRef = useRef(oynat)
@@ -210,7 +212,14 @@ function DumanEfekti({ frames, oynat, duraklat = false, frameSuresiMs = 80, styl
   if (!frames.length) return null
 
   return (
-    <div className="pointer-events-none absolute inset-0" style={style}>
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={{
+        ...style,
+        opacity: gizle ? 0 : 1,
+        transition: 'opacity 200ms ease',
+      }}
+    >
       {frames.map((src, i) => (
         <img
           key={i}

@@ -228,3 +228,16 @@ img {
     display: flex; /* dikey modda görünür */
   }
 }
+
+/* ---------------------------------------------------------------
+   ANA EKRAN İÇERİK ALANI — SCROLL ÇUBUĞUNU GİZLE
+   Mobilde ana ekran küçük yükseklikte taşabilir; scroll izni var
+   ama estetik bozulmasın diye çubuk gizli.
+---------------------------------------------------------------- */
+.ana-icerik {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.ana-icerik::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
