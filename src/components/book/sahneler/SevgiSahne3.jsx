@@ -145,6 +145,11 @@ function SevgiSahne3({ canli = true }) {
    OPACITY ile sürülür (src DEĞİŞMEZ → decode YOK → compositor işi). Kareler
    sahne açılır açılmaz ekran boyutunda decode edilir; tetiklenince ilk tur
    da kusursuz akar. frame_01 boş olduğundan oynat=false iken görünmez.
+
+   DECODE FIX: Tarayıcı opacity:0 görselleri decode etmeyi erteleyebilir.
+   İlk tetiklemede opacity 1 olunca anlık decode → stutter. Çözüm: mount
+   sonrası tüm <img>'leri .decode() ile GPU tekstürüne zorla çözümle;
+   animasyonu ancak hepsi hazır olunca ilerlet.
 ---------------------------------------------------------------- */
 function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSuresiMs = 80, style }) {
   const imgRefleri = useRef([])
@@ -157,6 +162,29 @@ function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSure
   const azalt = useHareketAzalt()
   const azaltRef = useRef(azalt)
   azaltRef.current = azalt
+
+  // Tüm kareler GPU-decode edildi mi? İlk turda stuttering olmasın diye
+  // animasyon yalnızca decode tamamlanınca kare ilerletir.
+  const hazirRef = useRef(false)
+
+  // Mount sonrası tüm kareleri force-decode et → GPU tekstürüne al.
+  // opacity:0 olsalar bile decode() çağrısı tarayıcıyı zorlar.
+  useEffect(() => {
+    if (!frames.length) return
+    hazirRef.current = false
+    let iptal = false
+    const decodeHepsi = async () => {
+      // İlk kareye kadar bekle ki img elementleri DOM'da src'leri set edilmiş olsun
+      await new Promise((r) => requestAnimationFrame(r))
+      if (iptal) return
+      const imgs = imgRefleri.current.filter(Boolean)
+      // Her img'i decode et (bazıları zaten hazır olabilir → catch ile yut)
+      await Promise.allSettled(imgs.map((img) => img.decode()))
+      if (!iptal) hazirRef.current = true
+    }
+    decodeHepsi()
+    return () => { iptal = true }
+  }, [frames])
 
   // Yalnızca iki <img>'in opacity'sini değiştir (decode yok → GPU/compositor)
   const goster = (i) => {
@@ -183,6 +211,12 @@ function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSure
         gecenRef.current = 0
         sonZaman = undefined
         goster(0) // tetiklenmedi: boş kare (görünmez)
+        return
+      }
+      // Kareler henüz decode edilmediyse animasyonu ilerletme (frame 0'da kal).
+      // Decode tamamlanınca bir sonraki tik'te normal akışa girer.
+      if (!hazirRef.current) {
+        sonZaman = undefined
         return
       }
       if (duraklatRef.current) {
@@ -227,7 +261,6 @@ function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSure
           src={src}
           alt=""
           draggable={false}
-          decoding="async"
           className="absolute inset-0 h-full w-full select-none"
           style={{ objectFit: 'fill', opacity: i === 0 ? 1 : 0, willChange: 'opacity' }}
         />
