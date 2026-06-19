@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp /tmp/sayfa1.png /c/Temp/sayfa1.png)",
+      "Bash(cp /tmp/sayfa3.png /c/Temp/sayfa3.png)",
+      "Bash(cp /tmp/sayfa3_kek.png /c/Temp/sayfa3_kek.png)",
+      "Bash(curl -s http://localhost:9222/json/list)",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-drag.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-drag2.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-flip.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-flip2.ps1')",
+      "Bash(taskkill //F //IM chrome.exe)",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-midflip.ps1')",
+      "PowerShell(vercel --prod --yes 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://interaktif-kitap.vercel.app/)",
+      "Bash(cygpath -w /tmp/sayfa3-init.png)",
+      "Bash(cp /tmp/sayfa3-init.png /c/Temp/sayfa3-init.png)",
+      "Bash(cp /tmp/sayfa3-kek.png /c/Temp/sayfa3-kek.png)",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-test.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-sparkle.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-test2.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-opacity.ps1')",
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-isil.ps1')"
+    ]
+  }
+}

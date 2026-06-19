@@ -1,6 +1,6 @@
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
 import TiklanirGorsel from '../TiklanirGorsel.jsx'
-import kalemler from '../../../assets/backgrounds/kalemler.png'
+import kalemler from '../../../assets/backgrounds/sayfa2/kalemler.png'
 
 /* ===============================================================
    SEVGİ — 2. SAHNE İÇERİĞİ (oda: Işıl çiçeği uzatıyor + Canım)

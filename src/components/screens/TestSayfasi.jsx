@@ -38,17 +38,20 @@ function Etiket({ children }) {
 function TestSayfasi() {
   const sahne2 = SEVGI_SAHNELERI[1]
 
-  // ?test=full → yalnızca 2. sahne, tam ekran 16:9 (hedef görselle birebir
-  // çerçeveleme; konum karşılaştırması için).
-  const tamEkran =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('test') === 'full'
+  const testParam =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('test')
+      : null
 
-  if (tamEkran) {
+  // ?test=full / ?test=sahneN → ilgili sahne, tam ekran 16:9 (hedef görselle
+  // birebir çerçeveleme; konum karşılaştırması için). full = 2. sahne (eski).
+  const sahneEsleme = { full: 1, sahne1: 0, sahne2: 1, sahne3: 2 }
+  if (testParam in sahneEsleme) {
+    const sahne = SEVGI_SAHNELERI[sahneEsleme[testParam]]
     return (
       <div className="flex h-full w-full items-center justify-center bg-black">
         <div className="relative overflow-hidden" style={{ width: '100vw', aspectRatio: '16 / 9' }}>
-          <Sahne sahne={sahne2} canli />
+          <Sahne sahne={sahne} canli />
         </div>
       </div>
     )

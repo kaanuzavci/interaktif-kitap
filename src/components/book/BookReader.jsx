@@ -34,12 +34,19 @@ import HomeButton from '../ui/HomeButton.jsx'
 const CEVIRME_SURE = 480 // sayfa dönüş animasyon süresi (ms)
 const ESIK = 90 // bu açıdan (derece) sonra bırakılırsa çevirme tamamlanır
 
+// Geliştirici kısayolu: ?sahne=N → kitap N. sayfada başlar (etkileşim testi)
+function baslangicSahne(toplam) {
+  if (typeof window === 'undefined') return 0
+  const n = Number(new URLSearchParams(window.location.search).get('sahne'))
+  return Number.isFinite(n) && n >= 1 ? Math.min(toplam - 1, Math.floor(n) - 1) : 0
+}
+
 function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = false }) {
   const kitap = kitapBul(kitapId)
   const sahneler = kitap?.sahneler || []
 
   // Aktif sahne ve sayfa çevirme durumu
-  const [sahneIndex, setSahneIndex] = useState(0)
+  const [sahneIndex, setSahneIndex] = useState(() => baslangicSahne(sahneler.length))
   // flip: { yon:'ileri'|'geri', aci:0..180, suruyor, gecisli } | null
   const [flip, setFlip] = useState(null)
 
@@ -64,7 +71,9 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
     adaylar.sort((a, b) => b.zIndex - a.zIndex) // üstteki önce
     for (const a of adaylar) {
       if (a.hitTest(e.clientX, e.clientY)) {
-        a.oynat()
+        // oynat'a olayı geçiriyoruz: dokun-oynat öğeleri yok sayar (no-arg),
+        // SÜRÜKLENEBİLİR öğeler (Işıl/sayfa3) sürüklemeyi buradan başlatır.
+        a.oynat(e)
         e.stopPropagation()
         return
       }
@@ -118,7 +127,9 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
 
     const yari = spreadRef.current ? spreadRef.current.clientWidth / 2 : 300
     dragRef.current = { yon, startX: e.clientX, yari, aci: 0, hareket: false }
-    setFlip({ yon, aci: 0, suruyor: true, gecisli: false })
+    // NOT: setFlip BURADA çağrılmaz. Çevirme katmanı yalnızca parmak GERÇEKTEN
+    // sürüklemeye başlayınca (eşik geçilince, surukleHareket'te) açılır → kenara
+    // sadece DOKUNMAK (sürüklemeden) sahneyi/animasyonları hiç etkilemez.
     window.addEventListener('pointermove', surukleHareket)
     window.addEventListener('pointerup', surukleBirak)
     e.preventDefault()
@@ -132,8 +143,13 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
     const ilerleme = d.yon === 'ileri' ? -dx / d.yari : dx / d.yari
     const aci = Math.max(0, Math.min(180, ilerleme * 180))
     d.aci = aci
-    if (Math.abs(dx) > 6) d.hareket = true
-    setFlip((f) => (f ? { ...f, aci, suruyor: true } : f))
+    // İlk anlamlı harekette çevirmeyi BAŞLAT (öncesinde canlı sahne dokunulmaz kalır)
+    if (!d.hareket && Math.abs(dx) > 6) {
+      d.hareket = true
+      setFlip({ yon: d.yon, aci, suruyor: true, gecisli: false })
+    } else if (d.hareket) {
+      setFlip((f) => (f ? { ...f, aci, suruyor: true } : f))
+    }
   }
 
   const surukleBirak = () => {
@@ -143,11 +159,9 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
     dragRef.current = null
     if (!d) return
 
-    // Neredeyse hiç sürüklenmediyse = tek dokunuş: sayfa çevirme YOK, iptal et
-    if (!d.hareket) {
-      setFlip(null)
-      return
-    }
+    // Sürükleme hiç başlamadıysa (yalnızca dokunuldu) çevirme katmanı zaten
+    // açılmadı → sahne/animasyonlar hiç etkilenmedi, yapılacak bir şey yok.
+    if (!d.hareket) return
 
     // Yeterince çevrildiyse tamamla; değilse geri yerine otur
     const tamamlanir = d.aci >= ESIK
@@ -198,7 +212,10 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
         <div
           className="relative"
           style={{
-            width: 'min(94vw, calc(90dvh * 16 / 9))',
+            // 16:9 kitabı ekrana sığdır: hem genişlik (96vw) hem yükseklikten
+            // türetilen genişlik (92dvh×16/9) ile sınırla → telefon/tablet/masaüstü
+            // hepsinde taşmadan en büyük boyut. dvh: mobil adres çubuğu payı.
+            width: 'min(96vw, calc(92dvh * 16 / 9))',
             padding: 'clamp(8px, 1.5vmin, 16px)',
             borderRadius: 'clamp(14px, 2.4vmin, 28px)',
             background: 'linear-gradient(135deg, #8b5e3c 0%, #7a4a2c 30%, #5e3720 70%, #4a2a18 100%)',
@@ -223,17 +240,30 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
             }}
           >
             <TiklamaKayitContext.Provider value={kayitApi}>
-              {/* ---------- İÇERİK: idle (canlı) VEYA çevirme (statik+yaprak) ---------- */}
-              {!flip ? (
-                // BOŞ ZAMAN: tek canlı sahne yüzeyi (etkileşimler aktif).
-                // key={sahneIndex}: sahne her değiştiğinde (özellikle hareket
-                // azalt modunda, çevirme animasyonu atlanınca) sahne SIFIRDAN
-                // kurulur → tıklanınca beliren öğeler (kalemler/çiçek) ve
-                // animasyonlar her sayfaya gelişte yeniden gizli/başlangıçta olur.
-                <div key={sahneIndex} className="absolute inset-0">
-                  <Sahne sahne={sahneler[sahneIndex]} canli />
-                </div>
-              ) : (
+              {/* ---------- İÇERİK: canlı sahne (HER ZAMAN) + çevirme katmanı ----------
+                  CANLI SAHNE HEP MOUNT'LU KALIR (key={sahneIndex}). Çevirme
+                  sırasında üstüne statik CevirmeKatmani biner. Böylece YARIDAN
+                  ÖNCE bırakılan (iptal edilen) çevirmede sahne unmount OLMADIĞI
+                  için sayfadaki canlı durum KORUNUR: açılmış raf, tüten duman,
+                  yürüyen Işıl, beliren kalemler/çiçek… sıfırlanmaz.
+                  Yalnızca çevirme TAMAMLANINCA (yarıyı geçince) sahneIndex —
+                  dolayısıyla key — değişir ve YENİ sahne sıfırdan kurulur; eski
+                  sayfanın öğeleri de o an kaybolur (istenen davranış).
+
+                  ÇEVİRME SIRASINDA canlı sahne GİZLENİR (visibility:hidden):
+                  böylece üstündeki canlı öğeleri (yüksek z'li Işıl/dokun
+                  halkaları/çiçek...) statik çevirme katmanına SIZMAZ — görüntü
+                  tıpkı eskisi gibi olur (animasyonlar durmuş gibi, başka
+                  sayfadan taşma yok). Sahne yine de mount'lu kaldığı için iptal
+                  edilen çevirmede durumu korunur. */}
+              <div
+                key={sahneIndex}
+                className="absolute inset-0"
+                style={{ visibility: flip ? 'hidden' : 'visible' }}
+              >
+                <Sahne sahne={sahneler[sahneIndex]} canli />
+              </div>
+              {flip && (
                 <CevirmeKatmani
                   sahneler={sahneler}
                   sahneIndex={sahneIndex}
@@ -287,8 +317,11 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
       <SoundToggle soundOn={soundOn} onToggle={onToggleSound} />
       <HomeButton onClick={onHome} />
 
-      {/* ===== SAYFA GÖSTERGESİ (sade, köşede) ===== */}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 rounded-full bg-gece/55 px-3 py-0.5 font-baslik text-xs font-bold text-white shadow md:text-sm">
+      {/* ===== SAYFA GÖSTERGESİ (sade, köşede; güvenli alana saygılı) ===== */}
+      <div
+        style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+        className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 rounded-full bg-gece/55 px-3 py-0.5 font-baslik text-xs font-bold text-white shadow md:text-sm"
+      >
         {sahneIndex + 1} / {sahneler.length}
       </div>
     </div>

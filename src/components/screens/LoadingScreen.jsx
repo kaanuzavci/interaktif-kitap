@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import IsilYurume from '../characters/IsilYurume.jsx'
-import arkaPlan from '../../assets/backgrounds/arka_plan.jpg'
-import cimen from '../../assets/backgrounds/cimen.png'
+import arkaPlan from '../../assets/backgrounds/sayfa1/arka_plan.jpg'
+import cimen from '../../assets/backgrounds/sayfa1/cimen.png'
 
 /* ===============================================================
    YÜKLEME EKRANI

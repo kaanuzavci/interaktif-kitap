@@ -8,9 +8,14 @@ import useHareketAzalt from './hooks/useHareketAzalt.js'
 
 // Geliştirici test sayfası: yalnızca URL'de ?test varsa (animasyon/şeffaflık
 // doğrulaması). Sahne 1'deki ?ayar paneliyle aynı mantık.
-const TEST_MODU =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).has('test')
+const SORGU =
+  typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search)
+    : new URLSearchParams()
+const TEST_MODU = SORGU.has('test')
+// Geliştirici kısayolu: ?oku=sevgi → yükleme/giriş atlanır, doğrudan kitap açılır
+// (BookReader ayrıca ?sahne=N ile o sayfada başlar). Etkileşim testleri için.
+const OKU_KITAP = SORGU.get('oku')
 
 /**
  * App: Uygulamanın en üst bileşeni.
@@ -27,10 +32,11 @@ const TEST_MODU =
  */
 function App() {
   // Hangi katmandayız? 'loading' = açılış, 'home' = kitaplık, 'book' = okuyucu
-  const [uiDurumu, setUiDurumu] = useState('loading')
+  // (?oku=... ile doğrudan kitaba atla — geliştirici kısayolu)
+  const [uiDurumu, setUiDurumu] = useState(OKU_KITAP ? 'book' : 'loading')
 
   // Açılan kitabın id'si ('sevgi' vb.) — 'book' durumunda kullanılır
-  const [aktifKitapId, setAktifKitapId] = useState(null)
+  const [aktifKitapId, setAktifKitapId] = useState(OKU_KITAP || null)
 
   // Ses açık mı? Howler.mute() TÜM sesleri tek seferde susturur.
   const [soundOn, setSoundOn] = useState(true)

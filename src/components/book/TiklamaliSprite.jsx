@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { TiklamaKayitContext } from './tiklamaKayit.js'
 import { opakMerkez, noktaDolu } from './alfaHarita.js'
 import DokunIpucu from './DokunIpucu.jsx'
+import Parilti, { PARILTI_SURE_MS } from './Parilti.jsx'
 
 /* ===============================================================
    TIKLAMALI SPRITE — tam-kare bir kare dizisini sahneye ölçekleyip
@@ -56,6 +57,7 @@ function TiklamaliSprite({
   canliRef.current = canli
 
   const [oynadi, setOynadi] = useState(false) // ipucunu gizlemek için
+  const [parilti, setParilti] = useState(false) // ilk dokunuş yıldız patlaması
   const [merkez, setMerkez] = useState(null) // {cx,cy} frame0 opak merkezi (0..1)
 
   const kayit = useContext(TiklamaKayitContext)
@@ -134,6 +136,9 @@ function TiklamaliSprite({
     if (oynatRef.current) return
     oynatRef.current = true
     setOynadi(true)
+    // İlk dokunuş parıltısı (yıldızlar) — öğe "parıltıyla gelmiş" gibi olur
+    setParilti(true)
+    setTimeout(() => setParilti(false), PARILTI_SURE_MS)
     baslangicRef.current = performance.now()
     if (!rafRef.current) rafRef.current = requestAnimationFrame(tik)
   }
@@ -203,6 +208,11 @@ function TiklamaliSprite({
 
       {/* DOKUN İPUCU — ilk dokunuşa kadar nesnenin üstünde nabız atan daireler */}
       {canli && !oynadi && ipucuStili && <DokunIpucu style={ipucuStili} />}
+
+      {/* İLK DOKUNUŞ PARILTISI — aynı noktada yıldızlar saçılır (tek seferlik) */}
+      {canli && parilti && ipucuStili && (
+        <Parilti style={{ ...ipucuStili, zIndex: zIndex + 4 }} />
+      )}
     </>
   )
 }

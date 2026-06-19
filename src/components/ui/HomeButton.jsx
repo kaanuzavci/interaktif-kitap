@@ -15,8 +15,14 @@ function HomeButton({ onClick }) {
     <button
       onClick={onClick}
       aria-label="Ana menüye dön"
+      // Ses butonunun SAĞINA, güvenli alana saygılı (env=0 → çentiksiz cihazda
+      // eski yerinde). 4.5rem = ses butonu genişliği + boşluk.
+      style={{
+        left: 'calc(max(0.75rem, env(safe-area-inset-left, 0px)) + 4.5rem)',
+        top: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+      }}
       className="
-        absolute left-20 top-3 z-40 md:left-24 md:top-5
+        absolute z-40
         flex h-14 w-14 items-center justify-center rounded-full
         md:h-16 md:w-16
         border-4 border-white bg-seker text-white

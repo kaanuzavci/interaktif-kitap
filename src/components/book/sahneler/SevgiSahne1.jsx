@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import IsilYurume, { ISIL_KARE_SAYISI } from '../../characters/IsilYurume.jsx'
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
+import DokunNoktasi from '../DokunNoktasi.jsx'
 import { useHareketAzalt } from '../../../hooks/useHareketAzalt.js'
 
 // Ön plan çimeni (tavşan/kütüğün ÖNÜNDE, Işıl'ın ARKASINDA kalır)
-import cimen from '../../../assets/backgrounds/cimen.png'
+import cimen from '../../../assets/backgrounds/sayfa1/cimen.png'
+// Ön plan çiçekleri (sahnenin EN ÖNÜ; tam 16:9 tuvale gömülü, çiçekler altta)
+import cicekler from '../../../assets/backgrounds/sayfa1/cicekler.png'
 
 /* ===============================================================
    SEVGİ — 1. SAHNE İÇERİĞİ (katmanlar + etkileşim)
@@ -15,14 +18,15 @@ import cimen from '../../../assets/backgrounds/cimen.png'
      cimen.png      (bu dosya)                — ön çimen, kütüğün ÖNÜ, IŞIL'IN ARKASI
      uğurböceği     (TiklamaliSprite)         — papatya üstünde, dokununca hoplar
      Işıl           (yürür)                   — çimenin önünde
-     Canım (çiçek)  — dokununca Işıl yürür    — en üstte
+     Işıl dokun     (DokunNoktasi)            — Işıl'ın üstünde "dokun" işareti
 
    ETKİLEŞİM DAVRANIŞI:
    - Tavşan/uğurböceği: ilk dokunuşa kadar durur (üstünde "dokun" ipucu).
      Bir kez dokununca DÖNGÜYE girer: bir kez oynar → kısa dinlenir → tekrar
      (tekrar dokunmaya gerek yok). Tıklama yalnızca görünen piksellerde.
-   - Işıl: Canım'a ilk dokunuşta soldan sağa yürür; sağ uca varınca BAŞA
-     ışınlanır ve tekrar sağa yürür (sürekli; geriye doğru yürümez).
+   - Işıl: üstündeki "dokun" işaretine dokununca (DokunNoktasi) soldan sağa
+     yürür; sağ uca varınca BAŞA ışınlanır ve tekrar sağa yürür (sürekli;
+     geriye doğru yürümez). İlk dokunuşta yıldız parıltısı oynar.
 
    PROP: canli  (true: tam etkileşim, false: donuk statik kopya)
 =============================================================== */
@@ -59,6 +63,11 @@ const ISIL_BOTTOM = '1%'
 const HIZ = 2.5 // % / s (mesafe / süre)
 const FRAME_SURESI = 150 // adım (kare) süresi (ms)
 
+// 🧒 IŞIL DOKUN NOKTASI — Işıl'ın gövdesi üstünde "dokun" işareti; dokununca
+// Işıl yürümeye başlar. (x,y) sahne %'si (Işıl'ın başlangıç göğüs hizası),
+// yaricap = dokunma dairesinin yarıçapı (sahne genişliği %'si — affedici).
+const ISIL_TIK = { x: '36%', y: '48%', yaricap: 12 }
+
 // Tam yürüyüş süresi (ms): toplam mesafe(%) / hız → saniye
 function yuruSuresiMs(hiz) {
   return ((ISIL_BITIS_LEFT - ISIL_BASLANGIC_LEFT) / hiz) * 1000
@@ -86,7 +95,9 @@ function SevgiSahne1({ canli = true }) {
   const [tavsan, setTavsan] = useState(TAVSAN_VARSAYILAN)
   const [ugur, setUgur] = useState(UGUR_VARSAYILAN)
 
-  const canimaTiklandi = () => {
+  // Işıl'a (üstündeki dokun noktasına) dokununca yürümeye başlar.
+  // (Parıltı/yıldızlar DokunNoktasi içinde otomatik oynar.)
+  const isilaTiklandi = () => {
     if (!canli || yuruyusAktif) return
     setYuruyusAktif(true)
   }
@@ -132,7 +143,7 @@ function SevgiSahne1({ canli = true }) {
         frameSuresiMs={170}
         donguArasiMs={750}
         canli={canli}
-        zIndex={6}
+        zIndex={26}
       />
 
       {/* ===== IŞIL (z-10, çimenin önünde) — soldan sağa sürekli yürüyüş.
@@ -144,36 +155,30 @@ function SevgiSahne1({ canli = true }) {
         yuruSureMs={yuruSuresiMs(hiz)}
       />
 
-      {/* ===== CANIM (z-30) — dokununca Işıl'ı yürütür (responsive: cqw) ===== */}
-      <button
-        onClick={canimaTiklandi}
-        aria-label="Canım'a dokun"
-        disabled={!canli}
-        className={`absolute bottom-[10%] right-[24%] z-30 flex flex-col items-center ${canli ? 'animate-sallan cursor-pointer' : 'cursor-default'
-          }`}
-        style={{ animationDelay: '1.2s' }}
-      >
-        {canli && !yuruyusAktif && (
-          <span
-            className="animate-kalp rounded-full bg-white/90 font-baslik font-bold text-seker shadow-md"
-            style={{ marginBottom: '0.6cqw', fontSize: '2.1cqw', padding: '0.3cqw 1.2cqw' }}
-          >
-            Bana dokun! 👆
-          </span>
-        )}
-        <div
-          className="flex items-center justify-center rounded-[45%] border-dashed border-cimen bg-white/70 backdrop-blur-sm"
-          style={{ width: '8cqw', height: '10cqw', borderWidth: '0.45cqw' }}
-        >
-          <span style={{ fontSize: '4.5cqw', lineHeight: 1 }}>🌸</span>
-        </div>
-        <span
-          className="rounded-full bg-cimen font-baslik font-bold text-white shadow-md"
-          style={{ marginTop: '0.7cqw', fontSize: '2.4cqw', padding: '0.35cqw 1.5cqw' }}
-        >
-          Canım
-        </span>
-      </button>
+      {/* ===== ÖN ÇİÇEKLER (sahnenin EN ÖNÜ; bottom'a hizalı) =====
+          cicekler.png tam 16:9 tuval; çiçekler tuvalin ALT kenarına gömülü
+          olduğundan tam-kaplama img → çiçekler doğal olarak en altta hizalanır.
+          z-25: Işıl'ın (z-10) ÖNÜNDE (derinlik hissi). pointer-events yok. */}
+      <img
+        src={cicekler}
+        alt=""
+        draggable={false}
+        className="pointer-events-none absolute inset-0 h-full w-full select-none"
+        style={{ zIndex: 25 }}
+      />
+
+      {/* ===== IŞIL DOKUN NOKTASI — Işıl'ın üstünde "dokun" işareti =====
+          Eski çiçek halkası kaldırıldı; artık doğrudan IŞIL'a dokununca yürür.
+          z-28: ön çiçeklerin (z-25) ÖNÜNDE → işaret Işıl'ın üstünde görünür.
+          Tetiklenince yıldız parıltısı oynar (DokunNoktasi içinde). */}
+      <DokunNoktasi
+        x={ISIL_TIK.x}
+        y={ISIL_TIK.y}
+        yaricap={ISIL_TIK.yaricap}
+        canli={canli}
+        zIndex={28}
+        onTetik={isilaTiklandi}
+      />
 
       {/* ===== AYAR PANELİ (yalnızca ?ayar + canlı modda) ===== */}
       {AYAR_MODU && canli && (

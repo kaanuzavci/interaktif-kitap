@@ -30,12 +30,15 @@
    - 'dokunmatik' : dokununca kısa bir tepki veren öğe (`etki`: 'parla'|'zipla'|'sallan')
 =============================================================== */
 
-// Yeni TABAN arka plan (çimensiz bölge + tavşan/uğurböceği yok); eksik
-// parçalar SevgiSahne1 içinde katman/sprite olarak ekleniyor.
-import arkaPlan from '../assets/backgrounds/arka_plan.jpg'
-import arkaPlan2 from '../assets/backgrounds/arka_plan2.jpg'
+// Arka planlar artık SAYFA bazlı klasörlerde (backgrounds/sayfa1, /sayfa2,
+// /sayfa3) — her sayfanın görselleri karışmasın diye ayrıldı. Eksik parçalar
+// (çimen, kalemler, raf vb.) ilgili Sahne bileşeninde katman olarak eklenir.
+import arkaPlan from '../assets/backgrounds/sayfa1/arka_plan.jpg'
+import arkaPlan2 from '../assets/backgrounds/sayfa2/arka_plan2.jpg'
+import arkaPlan3 from '../assets/backgrounds/sayfa3/arka_plan3.jpg'
 import SevgiSahne1 from '../components/book/sahneler/SevgiSahne1.jsx'
 import SevgiSahne2 from '../components/book/sahneler/SevgiSahne2.jsx'
+import SevgiSahne3 from '../components/book/sahneler/SevgiSahne3.jsx'
 
 export const SEVGI_SAHNELERI = [
   {
@@ -57,6 +60,19 @@ export const SEVGI_SAHNELERI = [
     id: 'sevgi-02',
     arkaplan: arkaPlan2,
     icerikBileseni: SevgiSahne2,
+    katmanlar: [],
+  },
+
+  // --- 3. SAHNE (MUTFAK: Işıl'ı keke götür → pastadan duman çıkar) ---
+  // Arka plan (arka_plan3: mutfak + masa + kek) üzerine:
+  //   - kek rafı (TiklanirGorsel)  : GİZLİ, dokununca belirir (sayfa2 mantığı)
+  //   - Işıl (isil.png)            : TUTULUP keke SÜRÜKLENİR
+  //   - duman (duman_animasyon)    : Işıl keke varınca pastadan tüter
+  // Tüm etkileşim kendine özgü olduğu için SevgiSahne3 bileşeninde.
+  {
+    id: 'sevgi-03',
+    arkaplan: arkaPlan3,
+    icerikBileseni: SevgiSahne3,
     katmanlar: [],
   },
 ]

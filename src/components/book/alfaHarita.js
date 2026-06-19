@@ -79,6 +79,20 @@ export function opakMerkez(im) {
   }
 }
 
+// Opak piksellerin sınır kutusu (0..1) — "kutu" (geniş/affedici) tıklama için:
+// görselin görünen pikselleri arasında boşluk olsa bile (ör. raflar arası),
+// tüm silüeti kapsayan dikdörtgene dokunmak öğeyi tetikler.
+export function opakKutu(im) {
+  const h = alfaHaritasiAl(im)
+  if (!h || !h.bbox) return null
+  return {
+    minx: h.bbox.minx / h.w,
+    miny: h.bbox.miny / h.h,
+    maxx: h.bbox.maxx / h.w,
+    maxy: h.bbox.maxy / h.h,
+  }
+}
+
 // Piksel-hassas isabet testi: ekran noktasını `el`'in kapladığı kutuya
 // göre `im`'in doğal pikseline çevir, alfasına bak (küçük tolerans ile).
 // `im` henüz yüklenmediyse (harita yok) güvenli tarafta `true` döner.

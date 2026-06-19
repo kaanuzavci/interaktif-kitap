@@ -60,12 +60,21 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;          /* kitapta kaydırma çubuğu istemiyoruz */
+  overscroll-behavior: none; /* mobilde aşağı çekince yenileme / kaydırma zinciri yok */
   font-family: var(--font-metin);
   background: var(--color-krem);
   /* Mobilde dokununca mavi vurgu çıkmasın, metin seçilmesin */
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none; /* uzun basınca iOS bağlam menüsü/önizleme çıkmasın */
   user-select: none;
   touch-action: manipulation; /* çift dokunma zoom'unu kapatır */
+}
+
+/* iOS Safari: yatayda adres çubuğu gizlenince yükseklik değişir → dvh/dvw
+   (App.jsx h-dvh/w-dvw) kullanıyoruz. Görseller hiçbir cihazda sürüklenmesin. */
+img {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 /* ---------------------------------------------------------------
@@ -171,6 +180,26 @@ body,
   0%   { transform: scale(0.45); opacity: 0.85; }
   70%  { opacity: 0.12; }
   100% { transform: scale(1.5);  opacity: 0; }
+}
+
+/* "İlk dokunuş" parıltısı (Parilti.jsx) — yıldız dışarı uçar ve söner.
+   --dx/--dy: uçuş hedefi (cqw), --rot: dönüş. translate(-50%) ile yıldız
+   başlangıçta noktanın tam üstündedir, sonra hedefe doğru saçılır. */
+@keyframes pariltiYildiz {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.25) rotate(0deg); }
+  20%  { opacity: 1; }
+  65%  { opacity: 0.95; }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot));
+  }
+}
+
+/* "İlk dokunuş" parıltısı — ortadaki kısa ışık parlaması */
+@keyframes pariltiFlash {
+  0%   { opacity: 0;    transform: translate(-50%, -50%) scale(0.2); }
+  35%  { opacity: 0.85; }
+  100% { opacity: 0;    transform: translate(-50%, -50%) scale(1.6); }
 }
 
 /* ---------------------------------------------------------------
