@@ -20,7 +20,25 @@
       "PowerShell(& 'C:\\\\Temp\\\\cdp-sparkle.ps1')",
       "PowerShell(& 'C:\\\\Temp\\\\cdp-test2.ps1')",
       "PowerShell(& 'C:\\\\Temp\\\\cdp-opacity.ps1')",
-      "PowerShell(& 'C:\\\\Temp\\\\cdp-isil.ps1')"
+      "PowerShell(& 'C:\\\\Temp\\\\cdp-isil.ps1')",
+      "Bash(python -)",
+      "Bash(cp /tmp/sahne4_a.png \"c:/Users/ggbes/OneDrive/Desktop/interaktif-kitap/_shot_a.png\" && echo copied && ls -la \"c:/Users/ggbes/OneDrive/Desktop/interaktif-kitap/_shot_a.png\")",
+      "PowerShell(& \"C:\\\\Temp\\\\cdp_test.ps1\")",
+      "PowerShell(& \"C:\\\\Temp\\\\cdp_test2.ps1\")",
+      "PowerShell(& \"C:\\\\Temp\\\\cdp_test3.ps1\")",
+      "Bash(cd /c/Temp && sed -e 's/function Pt2\\(/function PtScene\\(/' -e 's/function MD\\(/function DnClick\\(/' -e 's/function MM\\(/function MvMouse\\(/' -e 's/function MU\\(/function UpClick\\(/' -e 's/\\\\bMD \\\\$/DnClick $/g' -e 's/\\\\bMM @/MvMouse @/g' -e 's/\\\\bMU \\\\$/UpClick $/g' -e 's/Pt2 /PtScene /g' cdp_test3.ps1 > cdp_test4.ps1 && grep -nE 'DnClick|MvMouse|UpClick|PtScene' cdp_test4.ps1)",
+      "PowerShell(& \"C:\\\\Temp\\\\cdp_test4.ps1\")",
+      "PowerShell(& \"C:\\\\Temp\\\\cdp_diag.ps1\")",
+      "PowerShell(& \"C:\\\\Temp\\\\cdp_kite.ps1\")",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1600,900 --run-all-compositor-stages-before-draw --disable-new-content-rendering-timeout --virtual-time-budget=15000 --screenshot=/tmp/sayfa3-el.png \"http://localhost:5179/?oku=sevgi&sahne=3\")",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1600,900 --run-all-compositor-stages-before-draw --disable-new-content-rendering-timeout --virtual-time-budget=15000 --screenshot=/tmp/sayfa4-el.png \"http://localhost:5179/?oku=sevgi&sahne=4\")",
+      "Bash(cygpath -w /tmp)",
+      "Bash(echo \"---EXIT $?---\")",
+      "Bash(node -e \"const r=require\\('react'\\); const L=r.lazy\\(\\(\\)=>Promise.resolve\\({default:\\(\\)=>null}\\)\\); console.log\\('react', require\\('react/package.json'\\).version\\); console.log\\('payload type:', Array.isArray\\(L._payload\\)?'ARRAY':typeof L._payload\\); console.log\\('payload keys:', Object.keys\\(L._payload\\)\\); console.log\\('payload[0]:', L._payload[0], 'has _status:', '_status' in L._payload\\);\")"
+    ],
+    "additionalDirectories": [
+      "\\tmp",
+      "c:\\c\\Temp"
     ]
   }
 }

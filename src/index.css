@@ -47,6 +47,11 @@
 
   /* "Buraya dokun" ipucu: nabız atan/genişleyen daire (kütük & uğurböceği) */
   --animate-dokun-ping: dokunPing 1.6s ease-out infinite;
+
+  /* "Tutup sürükle" ipucu: el tut → yana kay → bırak → geri dön (Işıl/uçurtma) */
+  --animate-surukle-el: surukleEl 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  /* El ipucundaki yön oklarının nazik nabzı (sürükleme yönünü vurgular) */
+  --animate-surukle-ok: surukleOk 2.4s ease-in-out infinite;
 }
 
 /* ---------------------------------------------------------------
@@ -180,6 +185,23 @@ img {
   0%   { transform: scale(0.45); opacity: 0.85; }
   70%  { opacity: 0.12; }
   100% { transform: scale(1.5);  opacity: 0; }
+}
+
+/* "Tutup sürükle" el ipucu: küçük bir hikaye anlatır —
+   nesneyi TUT (hafifçe bas/küçül) → yana SÜRÜKLE → BIRAK → başa DÖN.
+   translateX yana kayış, scale "tutma" baskısı, rotate doğal el eğimi. */
+@keyframes surukleEl {
+  0%   { transform: translateX(-24%) rotate(-7deg) scale(1); }
+  16%  { transform: translateX(-24%) rotate(-7deg) scale(0.84); } /* TUT */
+  52%  { transform: translateX(24%)  rotate(7deg)  scale(0.84); } /* SÜRÜKLE */
+  68%  { transform: translateX(24%)  rotate(7deg)  scale(1); }    /* BIRAK */
+  100% { transform: translateX(-24%) rotate(-7deg) scale(1); }    /* DÖN */
+}
+
+/* Yön okları: el o tarafa kayarken hafifçe belirip büyür (akış hissi) */
+@keyframes surukleOk {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%      { opacity: 0.7;  transform: scale(1); }
 }
 
 /* "İlk dokunuş" parıltısı (Parilti.jsx) — yıldız dışarı uçar ve söner.

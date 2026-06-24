@@ -47,6 +47,8 @@ function TiklamaliSprite({
   zIndex = 10,
   gizliBaslat = false,
   ilkDokunusKaresi = 0, // ilk dokunuşta bu kareden başla (indeks); sonraki turlar normal
+  ipucuYuzde = null, // {x,y} sahne %'si — verilirse "dokun" ipucu opak merkez
+  // yerine TAM bu noktada durur (ör. uzun saplı saksılı çiçekte yüzün üstü)
 }) {
   const imgRef = useRef(null)
   const imgObjRef = useRef([]) // alfa testi için Image nesneleri
@@ -194,9 +196,9 @@ function TiklamaliSprite({
   // Kutu sahnede: sol=x%, üst=y%, genişlik/yükseklik = 100*olcek% olduğundan
   // merkez = x + cx*100*olcek (yatay), y + cy*100*olcek (dikey).
   const ipucuStili =
-    merkez && {
-      left: `${x + merkez.cx * 100 * olcek}%`,
-      top: `${y + merkez.cy * 100 * olcek}%`,
+    (ipucuYuzde || merkez) && {
+      left: ipucuYuzde ? `${ipucuYuzde.x}%` : `${x + merkez.cx * 100 * olcek}%`,
+      top: ipucuYuzde ? `${ipucuYuzde.y}%` : `${y + merkez.cy * 100 * olcek}%`,
       zIndex: zIndex + 3,
     }
 

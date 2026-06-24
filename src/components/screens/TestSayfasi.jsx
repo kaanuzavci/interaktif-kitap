@@ -45,7 +45,7 @@ function TestSayfasi() {
 
   // ?test=full / ?test=sahneN → ilgili sahne, tam ekran 16:9 (hedef görselle
   // birebir çerçeveleme; konum karşılaştırması için). full = 2. sahne (eski).
-  const sahneEsleme = { full: 1, sahne1: 0, sahne2: 1, sahne3: 2 }
+  const sahneEsleme = { full: 1, sahne1: 0, sahne2: 1, sahne3: 2, sahne4: 3 }
   if (testParam in sahneEsleme) {
     const sahne = SEVGI_SAHNELERI[sahneEsleme[testParam]]
     return (

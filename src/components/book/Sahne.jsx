@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 
 /* ===============================================================
    SAHNE — tek bir sahnenin görsel yüzeyi
@@ -56,8 +56,16 @@ function Sahne({ sahne, canli = true }) {
         <Katman key={i} katman={katman} canli={canli} />
       ))}
 
-      {/* ===== ÖZEL İÇERİK (karmaşık etkileşimli sahneler) ===== */}
-      {IcerikBileseni && <IcerikBileseni canli={canli} />}
+      {/* ===== ÖZEL İÇERİK (karmaşık etkileşimli sahneler) =====
+          Suspense: lazy() ile yüklenen sahne bileşenleri (SevgiSahne2/3/4)
+          için gerekli. Arka plan zaten görünür olduğundan fallback null
+          yeterli — kullanıcı yalnızca kısa bir an etkileşim öğelerini
+          görmez (arka plan + metin hep görünür kalır). */}
+      {IcerikBileseni && (
+        <Suspense fallback={null}>
+          <IcerikBileseni canli={canli} />
+        </Suspense>
+      )}
 
       {/* ===== ANLATI METNİ ===== */}
       {sahne.metin && (

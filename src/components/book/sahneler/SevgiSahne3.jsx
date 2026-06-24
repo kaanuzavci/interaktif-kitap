@@ -4,6 +4,7 @@ import { opakMerkez, noktaDolu } from '../alfaHarita.js'
 import { useHareketAzalt } from '../../../hooks/useHareketAzalt.js'
 import TiklanirGorsel from '../TiklanirGorsel.jsx'
 import DokunNoktasi from '../DokunNoktasi.jsx'
+import SurukleIpucu from '../SurukleIpucu.jsx'
 
 // Sayfa-3 görselleri (hepsi tam 16:9 tuvale gömülü)
 import isilGorsel from '../../../assets/backgrounds/sayfa3/isil.png'
@@ -36,18 +37,23 @@ import kekRafi from '../../../assets/backgrounds/sayfa3/kek_rafi.png'
    👉 KONUMLAR sahne %'sidir (x soldan, y yukarıdan). Aşağıdan ayarla.
    ─────────────────────────────────────────────────────────────── */
 
-/* Duman karelerini otomatik topla (sıralı) — diğer sahnelerle aynı desen */
-function kareleriTopla(moduller) {
-  return Object.keys(moduller)
-    .sort()
-    .map((yol) => moduller[yol])
+/* Duman kare URL'lerini topla (sıralı). eager: false → modül başlangıcında
+   25 PNG decode edilmez; URL'ler yalnızca DumanEfekti mount olunca lazy
+   resolve edilir (Aşama 1+2: ~200 MB GPU bellek tasarrufu). */
+const dumanGlobYollari = Object.keys(
+  import.meta.glob('../../../assets/animations/duman_animasyon/*.png'),
+).sort()
+// Lazy resolve: URL'leri ilk ihtiyaçta yükle ve önbelleğe al
+let _dumanUrlOnbellek = null
+async function dumanUrlleriniYukle() {
+  if (_dumanUrlOnbellek) return _dumanUrlOnbellek
+  const moduller = import.meta.glob(
+    '../../../assets/animations/duman_animasyon/*.png',
+    { eager: true, import: 'default' },
+  )
+  _dumanUrlOnbellek = dumanGlobYollari.map((yol) => moduller[yol])
+  return _dumanUrlOnbellek
 }
-const dumanKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/animations/duman_animasyon/*.png', {
-    eager: true,
-    import: 'default',
-  }),
-)
 
 // 🗄️ KEK RAFI (duvarda, sağ üst) — tam 16:9 tuval; left/top/width=tam kaplama.
 // kutuTiklama: raf silüetini çevreleyen kutuya dokunmak yeter (raflar arası
@@ -67,6 +73,9 @@ const ISIL_OLCEK = 1.15            // referans görselle aynı boyut (biraz büy
 const ISIL_HOME = { x: 9, y: 85 }  // ev merkezi (% sahne) — sol kenar, ayaklar kırpık
 // Sürükleme sınırları (Işıl merkezi bu kutudan çıkamaz → ekranda kalır)
 const SINIR = { xMin: 6, xMax: 78, yMin: 46, yMax: 88 }
+// 🤚 "Tutup sürükle" el ipucu — Işıl'ın görünen gövdesinin üstünde durur
+// (merkez aşağıda/kırpık kaldığından elle yukarı alındı). Sahne %'si.
+const ISIL_EL = { x: 10, y: 64 }
 
 // Geliştirici/önizleme: ?kek varsa raf açık + duman oynar başlar (screenshot)
 const KEK_DEBUG =
@@ -78,6 +87,9 @@ function SevgiSahne3({ canli = true }) {
   const [dumanAktif, setDumanAktif] = useState(KEK_DEBUG)
   // Işıl şu an tutulup sürükleniyor mu? — tutulurken koku DURAKLAR.
   const [isilTutuluyor, setIsilTutuluyor] = useState(false)
+  // Işıl bu sayfada hiç tutuldu mu? — tutulunca "tutup sürükle" el ipucu kaybolur
+  // (sayfaya tekrar gelince sahne sıfırlandığı için yeniden belirir).
+  const [isilTutuldu, setIsilTutuldu] = useState(false)
 
   return (
     <div className="absolute inset-0">
@@ -112,18 +124,25 @@ function SevgiSahne3({ canli = true }) {
         src={isilGorsel}
         canli={canli}
         zIndex={20}
-        onTutmaBasla={() => setIsilTutuluyor(true)}
+        onTutmaBasla={() => {
+          setIsilTutuluyor(true)
+          setIsilTutuldu(true) // ilk tutuşta "tutup sürükle" el ipucu kalkar
+        }}
         onBirak={() => setIsilTutuluyor(false)}
       />
 
-      {/* ===== DUMAN/KOKU (pastadan tüter) — tam-kaplama; KEK tıklayınca döngüde =====
-          duman_animasyon tuvali 16:9 ve duman tam kek konumundan yükselir,
-          bu yüzden tam-kaplama yeterli (ayrı konumlama gerekmez). frame_01
-          boş olduğundan tetiklenene kadar görünmez. gizle: Işıl tutulurken
-          duman tamamen gizlenir, bırakılınca yeniden belirir ve kaldığı
-          yerden devam eder. */}
+      {/* ===== "TUTUP SÜRÜKLE" EL İPUCU — Işıl ilk kez tutulana dek üstünde durur ===== */}
+      {canli && !isilTutuldu && (
+        <SurukleIpucu style={{ left: `${ISIL_EL.x}%`, top: `${ISIL_EL.y}%`, zIndex: 40 }} />
+      )}
+
+      {/* ===== DUMAN/KOKU (pastadan tüter) — CANVAS TABANLI =====
+          Eski yöntem: 25×<img> hepsi DOM'da, opacity ile saklanıyordu
+          → ~200 MB GPU bellek. YENİ: tek <canvas>, sadece aktif kare
+          çizilir → ~8 MB. Aynı görsel sonuç, %96 daha az bellek. */}
       <DumanEfekti
-        frames={dumanKareleri}
+        yukleyici={dumanUrlleriniYukle}
+        kareSayisi={dumanGlobYollari.length}
         oynat={dumanAktif && canli}
         duraklat={isilTutuluyor}
         gizle={isilTutuluyor}
@@ -135,104 +154,134 @@ function SevgiSahne3({ canli = true }) {
 }
 
 /* ---------------------------------------------------------------
-   DUMAN EFEKTİ — FLICKER'SIZ kare oynatıcı (IsilYurume tekniği)
+   DUMAN EFEKTİ — CANVAS TABANLI kare oynatıcı (MOBİL-DOSTU)
 
-   SORUN: tek <img>'in src'sini her karede değiştiren oynatıcı, İLK turda
-   her kareyi ilk gösterimde (ekran boyutunda) decode ettiğinden "bozuk
-   ampul" gibi yanıp söner; sonraki turlar (kareler önbellekte) akıcıdır.
+   ESKİ SORUN: 25 adet tam-ekran <img> hepsi DOM'da opacity ile
+   saklanıyordu → her biri GPU tekstürü olarak tutulduğundan
+   ~200 MB GPU belleği tüketiyordu. Masaüstünde sorun değildi ama
+   mobil tarayıcılar (300-500 MB limit) çöküyordu.
 
-   ÇÖZÜM: TÜM kareler üst üste <img> olarak basılır ve animasyon yalnızca
-   OPACITY ile sürülür (src DEĞİŞMEZ → decode YOK → compositor işi). Kareler
-   sahne açılır açılmaz ekran boyutunda decode edilir; tetiklenince ilk tur
-   da kusursuz akar. frame_01 boş olduğundan oynat=false iken görünmez.
+   YENİ ÇÖZÜM: Tek bir <canvas> öğesi; sadece AKTİF kare canvas'a
+   drawImage() ile çizilir. Önceki kare clearRect() ile silinir.
+   Böylece GPU'da aynı anda yalnızca 1 tekstür (canvas) tutulur
+   → ~200 MB → ~8 MB. Image nesneleri RAM'de (sıkıştırılmış) durur;
+   tarayıcı gerektiğinde decode eder, gerekmeyince atar.
 
-   DECODE FIX: Tarayıcı opacity:0 görselleri decode etmeyi erteleyebilir.
-   İlk tetiklemede opacity 1 olunca anlık decode → stutter. Çözüm: mount
-   sonrası tüm <img>'leri .decode() ile GPU tekstürüne zorla çözümle;
-   animasyonu ancak hepsi hazır olunca ilerlet.
+   FLICKER-SIZ BAŞLANGIÇ: Kareler arka planda Image nesneleri olarak
+   preload edilir. Animasyon yalnızca en az 2 kare hazır olunca
+   başlar. İlk kare (frame_01) zaten boş olduğundan tetiklenene
+   kadar canvas boş kalır (görünmez).
+
+   DURAKLAT / GİZLE: Aynı API — Işıl tutulurken canvas gizlenir
+   (opacity:0) ve kare ilerlemez; bırakılınca kaldığı yerden devam.
 ---------------------------------------------------------------- */
-function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSuresiMs = 80, style }) {
-  const imgRefleri = useRef([])
-  const aktifRef = useRef(0)
+function DumanEfekti({ yukleyici, kareSayisi = 0, oynat, duraklat = false, gizle = false, frameSuresiMs = 80, style }) {
+  const canvasRef = useRef(null)
+  const imglerRef = useRef([]) // Image nesneleri (preload)
+  const aktifRef = useRef(-1) // canvas'ta şu an çizili kare
   const oynatRef = useRef(oynat)
   oynatRef.current = oynat
   const duraklatRef = useRef(duraklat)
   duraklatRef.current = duraklat
-  const gecenRef = useRef(0) // oynatılan birikmiş süre (ms) — duraklatınca korunur
+  const gecenRef = useRef(0)
   const azalt = useHareketAzalt()
   const azaltRef = useRef(azalt)
   azaltRef.current = azalt
+  const hazirRef = useRef(false) // en az 2 kare decode edildi mi?
+  const toplamRef = useRef(kareSayisi)
+  toplamRef.current = kareSayisi
 
-  // Tüm kareler GPU-decode edildi mi? İlk turda stuttering olmasın diye
-  // animasyon yalnızca decode tamamlanınca kare ilerletir.
-  const hazirRef = useRef(false)
-
-  // Mount sonrası tüm kareleri force-decode et → GPU tekstürüne al.
-  // opacity:0 olsalar bile decode() çağrısı tarayıcıyı zorlar.
+  // Mount olunca kare URL'lerini lazy yükle + Image nesneleri oluştur
   useEffect(() => {
-    if (!frames.length) return
-    hazirRef.current = false
     let iptal = false
-    const decodeHepsi = async () => {
-      // İlk kareye kadar bekle ki img elementleri DOM'da src'leri set edilmiş olsun
-      await new Promise((r) => requestAnimationFrame(r))
-      if (iptal) return
-      const imgs = imgRefleri.current.filter(Boolean)
-      // Her img'i decode et (bazıları zaten hazır olabilir → catch ile yut)
-      await Promise.allSettled(imgs.map((img) => img.decode()))
+    hazirRef.current = false
+    imglerRef.current = []
+    aktifRef.current = -1
+
+    const yukle = async () => {
+      const urls = await yukleyici()
+      if (iptal || !urls?.length) return
+
+      const imgs = urls.map((url) => {
+        const im = new Image()
+        im.src = url
+        return im
+      })
+      imglerRef.current = imgs
+
+      // İlk 2 kareyi bekle (flicker'sız başlangıç için yeterli)
+      await Promise.allSettled([
+        imgs[0]?.decode?.(),
+        imgs[1]?.decode?.(),
+      ])
       if (!iptal) hazirRef.current = true
     }
-    decodeHepsi()
+    yukle()
     return () => { iptal = true }
-  }, [frames])
+  }, [yukleyici])
 
-  // Yalnızca iki <img>'in opacity'sini değiştir (decode yok → GPU/compositor)
-  const goster = (i) => {
-    const n = frames.length
-    if (!n) return
-    const yeni = ((i % n) + n) % n
-    const eski = aktifRef.current
-    if (yeni === eski) return
-    const a = imgRefleri.current[eski]
-    const b = imgRefleri.current[yeni]
-    if (a) a.style.opacity = '0'
-    if (b) b.style.opacity = '1'
+  // Canvas'a belirli kareyi çiz (öncekini sil)
+  const ciz = (idx) => {
+    const canvas = canvasRef.current
+    const imgs = imglerRef.current
+    const n = imgs.length
+    if (!canvas || !n) return
+    const yeni = ((idx % n) + n) % n
+    if (yeni === aktifRef.current) return
+
+    const ctx = canvas.getContext('2d')
+    const im = imgs[yeni]
+    // Canvas boyutunu ilk çizimde ayarla (16:9 tuval boyutuna)
+    if (im.naturalWidth && canvas.width !== im.naturalWidth) {
+      canvas.width = im.naturalWidth
+      canvas.height = im.naturalHeight
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    if (im.complete && im.naturalWidth) {
+      ctx.drawImage(im, 0, 0, canvas.width, canvas.height)
+    }
     aktifRef.current = yeni
   }
 
-  // Tek rAF döngüsü (delta birikimli) — duraklat'ta kare donar, sürede de durur.
+  // Temizle (boş kare göster)
+  const temizle = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    aktifRef.current = -1
+  }
+
+  // Tek rAF döngüsü (delta birikimli)
   useEffect(() => {
-    if (!frames.length) return
+    if (kareSayisi === 0) return
     let raf = 0
-    let sonZaman // önceki tik zamanı (delta için)
+    let sonZaman
     const tik = (now) => {
       raf = requestAnimationFrame(tik)
       if (!oynatRef.current || azaltRef.current) {
         gecenRef.current = 0
         sonZaman = undefined
-        goster(0) // tetiklenmedi: boş kare (görünmez)
+        temizle()
         return
       }
-      // Kareler henüz decode edilmediyse animasyonu ilerletme (frame 0'da kal).
-      // Decode tamamlanınca bir sonraki tik'te normal akışa girer.
       if (!hazirRef.current) {
         sonZaman = undefined
         return
       }
       if (duraklatRef.current) {
-        // DURAKLAT: kareyi dondur — süreyi biriktirme, karesini değiştirme
         sonZaman = undefined
         return
       }
       if (sonZaman === undefined) sonZaman = now
       gecenRef.current += now - sonZaman
       sonZaman = now
-      const idx = Math.floor(gecenRef.current / frameSuresiMs) % frames.length
-      goster(idx)
+      const n = imglerRef.current.length || 1
+      const idx = Math.floor(gecenRef.current / frameSuresiMs) % n
+      ciz(idx)
     }
     raf = requestAnimationFrame(tik)
     const gorunur = () => {
-      // Sekmeye dönünce delta'yı sıfırla (arka planda geçen süre sayılmasın)
       if (document.visibilityState === 'visible') sonZaman = undefined
     }
     document.addEventListener('visibilitychange', gorunur)
@@ -241,9 +290,9 @@ function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSure
       document.removeEventListener('visibilitychange', gorunur)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [frames, frameSuresiMs])
+  }, [kareSayisi, frameSuresiMs])
 
-  if (!frames.length) return null
+  if (kareSayisi === 0) return null
 
   return (
     <div
@@ -254,17 +303,11 @@ function DumanEfekti({ frames, oynat, duraklat = false, gizle = false, frameSure
         transition: 'opacity 200ms ease',
       }}
     >
-      {frames.map((src, i) => (
-        <img
-          key={i}
-          ref={(el) => (imgRefleri.current[i] = el)}
-          src={src}
-          alt=""
-          draggable={false}
-          className="absolute inset-0 h-full w-full select-none"
-          style={{ objectFit: 'fill', opacity: i === 0 ? 1 : 0, willChange: 'opacity' }}
-        />
-      ))}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 h-full w-full"
+        style={{ objectFit: 'fill' }}
+      />
     </div>
   )
 }

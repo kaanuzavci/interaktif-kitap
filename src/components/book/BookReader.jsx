@@ -54,6 +54,27 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
   const dragRef = useRef(null) // aktif sürükleme bilgisi
   const calSayfaSesi = useSayfaSesi()
 
+  // KOMŞU SAHNE PRELOAD — lazy() ile yüklenen sahne bileşenlerinin
+  // çevirme sırasında hazır olmasını sağlar. Aktif sahneden ±1 komşu
+  // sahnenin icerikBileseni'ni arka planda preload ediyoruz. Suspense
+  // fallback=null olduğundan çevirme katmanı bile gecikmez.
+  useEffect(() => {
+    const preloadIndeksler = [sahneIndex - 1, sahneIndex + 1].filter(
+      (i) => i >= 0 && i < sahneler.length,
+    )
+    for (const i of preloadIndeksler) {
+      const bilesen = sahneler[i]?.icerikBileseni
+      // React.lazy bileşenlerinde _payload[1] (init fonksiyonu) veya
+      // _init var ama bunları çağırmak yerine, doğrudan bileşeni render
+      // etmek Suspense ile yeterli. Preload işlemi Sahne bileşeninin
+      // Suspense fallback'i tarafından otomatik yönetilir.
+      if (bilesen && bilesen._payload && typeof bilesen._payload[0] === 'number' && bilesen._payload[0] === -1) {
+        // Henüz yüklenmemiş lazy bileşen → init fonksiyonunu tetikle
+        try { bilesen._payload[1]() } catch { /* Suspense yakalayacak */ }
+      }
+    }
+  }, [sahneIndex, sahneler])
+
   // --- TIKLANABİLİR SPRITE KAYIT DEFTERİ ---
   // Sahnedeki TiklamaliSprite'lar kendilerini buraya yazar; kitap yüzeyine
   // gelen pointerdown'ı (capture) burada üstten alta alfa-testiyle deneriz.
