@@ -18,14 +18,14 @@ function SurukleIpucu({ style }) {
   return (
     <div
       className="pointer-events-none absolute"
-      style={{ width: '12cqw', height: '12cqw', transform: 'translate(-50%, -50%)', ...style }}
+      style={{ width: '13cqw', height: '13cqw', transform: 'translate(-50%, -50%)', ...style }}
     >
       {/* EL — flexbox ile ortalanır (transform animasyona serbest kalsın),
           animate-surukle-el ile tut → kay → bırak → dön döngüsünü oynar. */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div
           className="animate-surukle-el"
-          style={{ width: '8cqw', height: '8cqw', filter: 'drop-shadow(0 0.5cqw 0.55cqw rgba(70,45,25,0.32))' }}
+          style={{ width: '7.6cqw', height: '9.4cqw', filter: 'drop-shadow(0 0.5cqw 0.55cqw rgba(70,45,25,0.32))' }}
         >
           <ElGorseli />
         </div>
@@ -34,24 +34,36 @@ function SurukleIpucu({ style }) {
   )
 }
 
-/* Yumuşak, çocuk dostu "tutan" el — krem dolgu + gece (mor) ana hat.
-   Parmaklar nesnenin üstüne KIVRILMIŞ (tutma/kavrama pozu): el sırtı üstte,
-   dört parmak alt kenarda nesneyi sarar gibi, başparmak solda içe kıvrık.
-   Sahne paletiyle (krem/gece) uyumlu; küçük ve sade durur. */
+/* Çocuk dostu, RENKLİ "tutan" el — yumuşak ten dolgu + sıcak hat; üstte
+   şeker-pembe manşet (kol). El YUKARIDAN nesneye uzanır: avuç üstte, dört
+   ayrık parmak + başparmak nesneyi tutmak için aşağı iner. Manşet renk katar
+   ve "kol uzanıyor" hissini güçlendirir (Sevgi temasına uygun). */
 function ElGorseli() {
   return (
-    <svg viewBox="0 0 64 64" className="h-full w-full">
-      <g fill="#fff6e9" stroke="#6d5c93" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round">
-        {/* başparmak — solda, içe kıvrık */}
-        <path d="M18 33 q-9 -1 -10 7 q-1 7 7 8 q5 0 6 -5 z" />
-        {/* el sırtı (üst, yuvarlak) + dört kıvrık parmak (alt kenar tutar gibi) */}
-        <path d="M14 30 C14 17 24 15 32 15 C40 15 50 17 50 30 C50 34 49 37 46 39 C45 45 41 46 39 40 C37 46 33 47 31 40 C29 46 25 46 23 39 C21 45 17 44 16 38 C15 35 14 33 14 30 Z" />
-        {/* parmak boğum çizgileri (parmakları belirginleştirir) */}
-        <g stroke="#6d5c93" strokeWidth="1.5" fill="none" opacity="0.5">
-          <path d="M23 33 v6" />
-          <path d="M31 33 v7" />
-          <path d="M39 33 v6" />
+    <svg viewBox="0 0 60 74" className="h-full w-full">
+      <g strokeLinejoin="round" strokeLinecap="round">
+        {/* PARMAKLAR + BAŞPARMAK (avucun arkasında; tabanları avuçla örtülür) */}
+        <g fill="#ffcea3" stroke="#c5895c" strokeWidth="2.3">
+          <rect x="13" y="32" width="8.5" height="26" rx="4.25" transform="rotate(-8 17 45)" />
+          <rect x="22.5" y="30" width="9" height="30" rx="4.5" />
+          <rect x="32" y="32" width="8.5" height="27" rx="4.25" transform="rotate(7 36 45)" />
+          <rect x="40.5" y="35" width="8" height="20" rx="4" transform="rotate(15 44 45)" />
+          <rect x="2.5" y="35" width="8.5" height="19" rx="4.25" transform="rotate(40 7 44)" />
         </g>
+        {/* AVUÇ (üstte; parmak tabanlarını örter → temiz boğum çizgisi) */}
+        <path
+          d="M11 36 q0 -12 19 -12 q19 0 19 12 v5 q0 9 -19 9 q-19 0 -19 -9 z"
+          fill="#ffcea3"
+          stroke="#c5895c"
+          strokeWidth="2.3"
+        />
+        {/* MANŞET (renkli kol — şeker pembe) */}
+        <path
+          d="M15 30 q-1 -12 15 -12 q16 0 15 12 q-3 4 -15 4 q-12 0 -15 -4 z"
+          fill="#ff8fab"
+          stroke="#dd6f8e"
+          strokeWidth="2.3"
+        />
       </g>
     </svg>
   )
