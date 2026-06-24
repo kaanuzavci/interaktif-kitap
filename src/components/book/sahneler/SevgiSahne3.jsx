@@ -507,7 +507,10 @@ function SurukleIsil({ src, canli = true, zIndex = 20, onTutmaBasla, onBirak }) 
     // merkez hesaplandıktan sonra render edilir (jump fix — bkz. useLayoutEffect).
     <div
       ref={sarmaRef}
-      className="absolute inset-0"
+      // pointer-events-none: tam-kaplama sarmalayıcı sayfa-çevirme sürükleme
+      // bölgelerini örtmesin (tutma yüzey-capture + alfa testiyle yapılır,
+      // DOM pointer olayına gerek yok). Yoksa sahne çevrilemez olurdu.
+      className="pointer-events-none absolute inset-0"
       style={{ zIndex, willChange: 'transform' }}
     >
       {merkez && (

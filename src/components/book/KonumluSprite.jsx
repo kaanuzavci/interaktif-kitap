@@ -152,8 +152,13 @@ function KonumluSprite({
 
   // En güncel fonksiyonları ref'te tut (kayıt defteri stale closure yakalamasın)
   const fnRef = useRef({})
+  // SAYFA ÇEVİRME ÖNCELİĞİ: animasyon başladıktan sonra (oynat) öğe artık
+  // dokunmayı yutmaz → isabet testi false döner, pointerdown sürükleme
+  // bölgesine geçer ve SAYFA çevrilir. (Sürüklenebilir öğeler hariç.)
   fnRef.current.hitTest = (cx, cy) =>
-    noktaDolu(imgRef.current, imgObjRef.current[aktifKareRef.current] || imgObjRef.current[0], cx, cy)
+    oynatRef.current
+      ? false
+      : noktaDolu(imgRef.current, imgObjRef.current[aktifKareRef.current] || imgObjRef.current[0], cx, cy)
   fnRef.current.oynat = oynat
 
   // Kayıt defterine yaz / sil

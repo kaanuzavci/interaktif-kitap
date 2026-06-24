@@ -39,6 +39,8 @@ import arkaPlan from '../assets/backgrounds/sayfa1/arka_plan.jpg'
 import arkaPlan2 from '../assets/backgrounds/sayfa2/arka_plan2.jpg'
 import arkaPlan3 from '../assets/backgrounds/sayfa3/arka_plan3.jpg'
 import arkaPlan4 from '../assets/backgrounds/sayfa4/arka_plan4.jpg'
+// Sayfa-5 TABAN: gündüz gökyüzü (gece gökyüzü + bulutlar SevgiSahne5 içinde).
+import arkaPlan5 from '../assets/backgrounds/sayfa5/gündüz_gökyüzü.jpg'
 
 // İlk sahne hemen yüklenir (kullanıcı her zaman buradan başlar).
 import SevgiSahne1 from '../components/book/sahneler/SevgiSahne1.jsx'
@@ -50,6 +52,7 @@ import SevgiSahne1 from '../components/book/sahneler/SevgiSahne1.jsx'
 const SevgiSahne2 = lazy(() => import('../components/book/sahneler/SevgiSahne2.jsx'))
 const SevgiSahne3 = lazy(() => import('../components/book/sahneler/SevgiSahne3.jsx'))
 const SevgiSahne4 = lazy(() => import('../components/book/sahneler/SevgiSahne4.jsx'))
+const SevgiSahne5 = lazy(() => import('../components/book/sahneler/SevgiSahne5.jsx'))
 
 export const SEVGI_SAHNELERI = [
   {
@@ -98,6 +101,17 @@ export const SEVGI_SAHNELERI = [
     id: 'sevgi-04',
     arkaplan: arkaPlan4,
     icerikBileseni: SevgiSahne4,
+    katmanlar: [],
+  },
+
+  // --- 5. SAHNE (GÖKYÜZÜ: güneş ↔ ay döngüsü) ---
+  // TABAN arka plan gündüz gökyüzüdür; gece gökyüzü + gündüz/gece bulutları +
+  // güneş/ay kareleri SevgiSahne5 içinde crossfade ile yönetilir. Güneşe
+  // dokununca batar→ay gelir→zzz; aya dokununca ay gider→güneş döner (döngü).
+  {
+    id: 'sevgi-05',
+    arkaplan: arkaPlan5,
+    icerikBileseni: SevgiSahne5,
     katmanlar: [],
   },
 ]

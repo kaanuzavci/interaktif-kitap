@@ -39,6 +39,8 @@ function TiklanirGorsel({ src, left = '0%', top = '0%', width = '20%', canli = t
   canliRef.current = canli
 
   const [gorunur, setGorunur] = useState(baslangicGorunur) // dokunuldu mu? (belirdi mi?)
+  const gorunurRef = useRef(gorunur) // en güncel görünür durumu (isabet testi için)
+  gorunurRef.current = gorunur
   const [parilti, setParilti] = useState(false) // ilk dokunuş yıldız patlaması
   const [merkez, setMerkez] = useState(null) // {cx,cy} opak merkez (0..1)
 
@@ -89,8 +91,13 @@ function TiklanirGorsel({ src, left = '0%', top = '0%', width = '20%', canli = t
 
   // Kayıt defteri stale closure yakalamasın diye en güncel fn'leri ref'te tut
   const fnRef = useRef({})
+  // SAYFA ÇEVİRME ÖNCELİĞİ: görsel bir kez belirdikten sonra (gorunur) artık
+  // dokunmayı yutmaz → isabet testi false döner, pointerdown sürükleme
+  // bölgesine geçip SAYFA çevrilir. (Kek rafı sağ kenara taştığından önemli.)
   fnRef.current.hitTest = (cx, cy) =>
-    kutuTiklama ? kutuIsabet(cx, cy) : noktaDolu(imgRef.current, imgRef.current, cx, cy)
+    gorunurRef.current
+      ? false
+      : kutuTiklama ? kutuIsabet(cx, cy) : noktaDolu(imgRef.current, imgRef.current, cx, cy)
   fnRef.current.oynat = oynat
 
   useEffect(() => {

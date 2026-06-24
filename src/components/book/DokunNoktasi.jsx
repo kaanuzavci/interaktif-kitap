@@ -26,6 +26,8 @@ function DokunNoktasi({ x = '50%', y = '50%', yaricap = 8, canli = true, zIndex 
   canliRef.current = canli
 
   const [tetiklendi, setTetiklendi] = useState(false)
+  const tetiklendiRef = useRef(false) // en güncel tetik durumu (isabet testi için)
+  tetiklendiRef.current = tetiklendi
   const [parilti, setParilti] = useState(false)
 
   const kayit = useContext(TiklamaKayitContext)
@@ -41,7 +43,11 @@ function DokunNoktasi({ x = '50%', y = '50%', yaricap = 8, canli = true, zIndex 
 
   // Yarıçap isabeti: tıklama, (x,y) noktasından yaricap% (sahne genişliği)
   // kadar uzaklıktaki daire içindeyse true.
+  // SAYFA ÇEVİRME ÖNCELİĞİ: bir kez tetiklendikten sonra (ör. keke dokunup
+  // koku başladıktan sonra) artık dokunmayı yutmaz → pointerdown sürükleme
+  // bölgesine geçip SAYFA çevrilir.
   const hitTest = (cx, cy) => {
+    if (tetiklendiRef.current) return false
     const el = noktaRef.current
     const sahne = el?.parentElement
     if (!el || !sahne) return false

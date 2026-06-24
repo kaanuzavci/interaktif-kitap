@@ -312,7 +312,11 @@ function SurukleUcurtma({ src, canli = true, zIndex = 30, onTutmaBasla }) {
     // VERİLMEZ). <img> YALNIZCA merkez hesaplandıktan sonra render edilir (sıçrama fix).
     <div
       ref={sarmaRef}
-      className="absolute inset-0"
+      // pointer-events-none: tam-kaplama sarmalayıcı, ÜSTTE (z-30) olduğundan
+      // pointer-events:auto olsaydı sayfa-çevirme sürükleme bölgelerini TAMAMEN
+      // örterdi (sayfa çevrilemezdi). Tutma zaten yüzey-capture + alfa testiyle
+      // yapılır (DOM pointer olayına gerek yok) → sarmalayıcı dokunmayı yutmamalı.
+      className="pointer-events-none absolute inset-0"
       style={{ zIndex, willChange: 'transform' }}
     >
       {merkez && (

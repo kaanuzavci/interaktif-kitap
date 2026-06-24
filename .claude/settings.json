@@ -34,7 +34,15 @@
       "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1600,900 --run-all-compositor-stages-before-draw --disable-new-content-rendering-timeout --virtual-time-budget=15000 --screenshot=/tmp/sayfa4-el.png \"http://localhost:5179/?oku=sevgi&sahne=4\")",
       "Bash(cygpath -w /tmp)",
       "Bash(echo \"---EXIT $?---\")",
-      "Bash(node -e \"const r=require\\('react'\\); const L=r.lazy\\(\\(\\)=>Promise.resolve\\({default:\\(\\)=>null}\\)\\); console.log\\('react', require\\('react/package.json'\\).version\\); console.log\\('payload type:', Array.isArray\\(L._payload\\)?'ARRAY':typeof L._payload\\); console.log\\('payload keys:', Object.keys\\(L._payload\\)\\); console.log\\('payload[0]:', L._payload[0], 'has _status:', '_status' in L._payload\\);\")"
+      "Bash(node -e \"const r=require\\('react'\\); const L=r.lazy\\(\\(\\)=>Promise.resolve\\({default:\\(\\)=>null}\\)\\); console.log\\('react', require\\('react/package.json'\\).version\\); console.log\\('payload type:', Array.isArray\\(L._payload\\)?'ARRAY':typeof L._payload\\); console.log\\('payload keys:', Object.keys\\(L._payload\\)\\); console.log\\('payload[0]:', L._payload[0], 'has _status:', '_status' in L._payload\\);\")",
+      "Bash(python -c \"import PIL; print\\('PIL', PIL.__version__\\)\")",
+      "Bash(python sayfa5_isleme.py)",
+      "Bash(awk '{print int\\($5/1024\\)\"KB  \"$9}')",
+      "Bash(node -e \"console.log\\('node', process.version, 'WebSocket', typeof WebSocket\\)\")",
+      "Bash(node cdp5.mjs)",
+      "Bash(node cdp_part1.mjs)",
+      "Bash(node cdp_kite.mjs)",
+      "Bash(node cdp_s5turn.mjs)"
     ],
     "additionalDirectories": [
       "\\tmp",

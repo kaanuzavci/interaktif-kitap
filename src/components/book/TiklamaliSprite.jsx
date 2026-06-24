@@ -158,8 +158,14 @@ function TiklamaliSprite({
 
   // En güncel fonksiyonları ref'te tut (kayıt defteri stale closure yakalamasın)
   const fnRef = useRef({})
+  // SAYFA ÇEVİRME ÖNCELİĞİ: bir kez dokunup animasyon başladıktan (oynat)
+  // sonra bu öğeyi "tıklanamaz" yap → kayıt defterindeki isabet testi false
+  // döner, böylece kenarda/köşede olsa bile pointerdown sürükleme bölgesine
+  // geçer ve SAYFA çevrilir. Sürüklenebilir öğeler bunu yapmaz (hep tutulur).
   fnRef.current.hitTest = (cx, cy) =>
-    noktaDolu(imgRef.current, imgObjRef.current[aktifKareRef.current] || imgObjRef.current[0], cx, cy)
+    oynatRef.current
+      ? false
+      : noktaDolu(imgRef.current, imgObjRef.current[aktifKareRef.current] || imgObjRef.current[0], cx, cy)
   fnRef.current.oynat = oynat
 
   // Kayıt defterine yaz / sil
