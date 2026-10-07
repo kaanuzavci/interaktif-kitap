@@ -9,7 +9,100 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#ffe9f0" />
-    <title>İnteraktif Kitap — Sevgi</title>
+    <!-- ⚠️ ALAN ADI KURALI: Buradaki TÜM mutlak adresler canlı özel alan adını
+         (https://www.renklidusleratlasi.com/) göstermelidir. Eskiden hepsi
+         interaktif-kitap.vercel.app'i gösteriyordu; canonical eski adresi
+         işaret ettiği için arama motorları ASIL adres olarak onu sayıyor,
+         özel alan adı ise "renkli düşler atlası" aramasında hiç çıkmıyordu.
+         Alan adı değişirse aşağıdaki adreslerin HEPSİNİ + public/robots.txt +
+         public/sitemap.xml dosyalarını birlikte güncelle. -->
+    <title>Renkli Düşler Atlası — Işıl'ın Değerli Dünyası | Çocuklar İçin Sesli İnteraktif Kitap</title>
+
+    <!-- ===== SEO ===== -->
+    <meta
+      name="description"
+      content="Renkli Düşler Atlası'nın ilk kitabı Işıl'ın Değerli Dünyası: okul öncesi çocuklar için sesli anlatımlı, dokunmatik ve animasyonlu interaktif çocuk kitabı. Sayfaları çevir, karakterlere dokun, Işıl'la birlikte sevgiyi keşfet — telefon ve tablette ücretsiz oku."
+    />
+    <link rel="canonical" href="https://www.renklidusleratlasi.com/" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Renkli Düşler Atlası" />
+    <!-- Marka adının yazımı arama motoru için tek bir yerde netleşsin -->
+    <meta name="application-name" content="Renkli Düşler Atlası" />
+
+    <!-- Sosyal paylaşım kartları (WhatsApp/Facebook/Twitter önizlemesi) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Renkli Düşler Atlası" />
+    <meta property="og:title" content="Renkli Düşler Atlası — Işıl'ın Değerli Dünyası | Çocuklar İçin Sesli İnteraktif Kitap" />
+    <meta
+      property="og:description"
+      content="Renkli Düşler Atlası'ndan sesli anlatımlı, dokunmatik ve animasyonlu interaktif çocuk kitabı. Sayfaları çevir, karakterlere dokun, Işıl'la birlikte sevgiyi keşfet."
+    />
+    <meta property="og:url" content="https://www.renklidusleratlasi.com/" />
+    <meta property="og:image" content="https://www.renklidusleratlasi.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Renkli Düşler Atlası — Işıl'ın Değerli Dünyası interaktif çocuk kitabı" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Renkli Düşler Atlası — Işıl'ın Değerli Dünyası" />
+    <meta
+      name="twitter:description"
+      content="Sesli anlatımlı, dokunmatik ve animasyonlu interaktif çocuk kitabı. Telefon ve tablette ücretsiz oku."
+    />
+    <meta name="twitter:image" content="https://www.renklidusleratlasi.com/og.jpg" />
+
+    <!-- Site ikonları -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Arama motorları için yapılandırılmış veri.
+         ÜÇ düğüm: marka (Organization) → site (WebSite) → kitap (Book).
+         @id ile birbirine bağlanır; böylece Google "Renkli Düşler Atlası"nı
+         bir MARKA olarak tanır ve sameAs'taki Instagram hesabıyla eşleştirir
+         (marka sorgularında en güçlü sinyallerden biri). -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.renklidusleratlasi.com/#marka",
+            "name": "Renkli Düşler Atlası",
+            "alternateName": ["Renkli Dusler Atlasi", "renklidusleratlasi"],
+            "url": "https://www.renklidusleratlasi.com/",
+            "logo": "https://www.renklidusleratlasi.com/icon-512.png",
+            "email": "renklidusleratlasi@gmail.com",
+            "sameAs": ["https://www.instagram.com/renklidusleratlasi/"],
+            "description": "Okul öncesi çocuklar için sesli anlatımlı, dokunmatik ve animasyonlu interaktif çocuk kitapları."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.renklidusleratlasi.com/#site",
+            "name": "Renkli Düşler Atlası",
+            "alternateName": "Işıl'ın Değerli Dünyası",
+            "url": "https://www.renklidusleratlasi.com/",
+            "inLanguage": "tr",
+            "publisher": { "@id": "https://www.renklidusleratlasi.com/#marka" },
+            "description": "Renkli Düşler Atlası — çocuklar için sesli, interaktif kitaplar. İlk kitap: Işıl'ın Değerli Dünyası."
+          },
+          {
+            "@type": "Book",
+            "@id": "https://www.renklidusleratlasi.com/#kitap",
+            "name": "Işıl'ın Değerli Dünyası",
+            "url": "https://www.renklidusleratlasi.com/",
+            "inLanguage": "tr",
+            "bookFormat": "https://schema.org/EBook",
+            "isAccessibleForFree": true,
+            "publisher": { "@id": "https://www.renklidusleratlasi.com/#marka" },
+            "isPartOf": { "@id": "https://www.renklidusleratlasi.com/#site" },
+            "typicalAgeRange": "3-6",
+            "genre": "Çocuk kitabı",
+            "description": "Sesli anlatımlı, dokunmatik ve animasyonlu interaktif çocuk kitabı. Işıl'la birlikte sevgiyi keşfet."
+          }
+        ]
+      }
+    </script>
 
     <!-- Çocuk dostu, yuvarlak hatlı fontlar (Türkçe karakter destekli):
          "Baloo 2"  -> başlıklar ve butonlar
@@ -22,8 +115,34 @@
     />
   </head>
   <body>
+    <!-- Arama motorları ve ekran okuyucular için görünmez başlık/özet.
+         #root DIŞINDA durur (React içeriği ezmez); ekranda görünmez. -->
+    <div
+      style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap"
+    >
+      <h1>Renkli Düşler Atlası</h1>
+      <h2>Işıl'ın Değerli Dünyası — Çocuklar İçin Sesli İnteraktif Kitap</h2>
+      <p>
+        Renkli Düşler Atlası, okul öncesi çocuklar için sesli anlatımlı,
+        dokunmatik ve animasyonlu interaktif kitaplar hazırlar. İlk kitabı
+        Işıl'ın Değerli Dünyası'nda sayfaları çevirerek Işıl'ın hikayesini
+        keşfedin; karakterlere dokunun, animasyonları izleyin. Telefon ve
+        tablette yatay modda ücretsiz okunur.
+      </p>
+      <p>
+        İletişim: Instagram
+        <a href="https://www.instagram.com/renklidusleratlasi/">@renklidusleratlasi</a>
+        — e-posta renklidusleratlasi@gmail.com
+      </p>
+    </div>
+
     <!-- React uygulaması bu div'in içine yerleşir (bkz. src/main.jsx) -->
     <div id="root"></div>
+    <noscript>
+      Renkli Düşler Atlası — Işıl'ın Değerli Dünyası, tarayıcıda çalışan
+      interaktif bir çocuk kitabıdır. Kitabı okumak için lütfen JavaScript'i
+      etkinleştirin.
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

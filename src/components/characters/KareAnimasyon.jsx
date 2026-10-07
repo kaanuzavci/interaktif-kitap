@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { useHareketAzalt } from '../../hooks/useHareketAzalt.js'
+import { kitapSaati } from '../../hooks/kitapDuraklat.js'
 
 /* ===============================================================
    KARE ANİMASYON — genel amaçlı sprite (kare dizisi) oynatıcı
@@ -126,8 +127,11 @@ const KareAnimasyon = forwardRef(function KareAnimasyon(
     let rafId = 0
     let baslangic
 
-    const tik = (now) => {
+    const tik = (rafNow) => {
       rafId = requestAnimationFrame(tik)
+      // Duraklatılabilir sanal zaman: kitap duraklatılınca saat durur →
+      // kare olduğu yerde donar; devam edince sıçramadan sürer.
+      const now = kitapSaati(rafNow)
 
       // Hazır değil / durmuş / hareket-azalt / tek kare: duruk karede bekle
       if (!hazirRef.current || !oynatRef.current || azaltRef.current || total === 0 || n === 1) {

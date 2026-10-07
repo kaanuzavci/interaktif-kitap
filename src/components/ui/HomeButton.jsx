@@ -1,24 +1,20 @@
 /**
- * HomeButton: "Ana menüye dön" butonu (ev ikonu).
+ * HomeButton: "Kitaptan çık" butonu (X ikonu, SAĞ üst köşede).
  *
- * Kitabın içindeyken sol üstte, ses butonunun hemen yanında durur.
- * Basınca giriş ekranına (HomeScreen) döner.
+ * Örnek tasarımdaki gibi: sol üstte durdur + ses düğmeleri dururken,
+ * kitabı kapatma (ana menüye dönme) düğmesi sağ üstte X olarak durur.
  *
  * Props:
  *  - onClick : basılınca çalışacak fonksiyon (App'ten gelir)
- *
- * Konum: ses butonu left-3 (mobil) / left-5 (geniş), 14-16 birim
- * genişlikte. Ev butonunu onun SAĞINA koyuyoruz (left-20 / left-24).
  */
 function HomeButton({ onClick }) {
   return (
     <button
       onClick={onClick}
-      aria-label="Ana menüye dön"
-      // Ses butonunun SAĞINA, güvenli alana saygılı (env=0 → çentiksiz cihazda
-      // eski yerinde). 4.5rem = ses butonu genişliği + boşluk.
+      aria-label="Kitabı kapat, ana menüye dön"
+      // Sağ üst köşe; güvenli alana (notch/yuvarlak köşe) saygılı.
       style={{
-        left: 'calc(max(0.75rem, env(safe-area-inset-left, 0px)) + 4.5rem)',
+        right: 'max(0.75rem, env(safe-area-inset-right, 0px))',
         top: 'max(0.75rem, env(safe-area-inset-top, 0px))',
       }}
       className="
@@ -31,18 +27,17 @@ function HomeButton({ onClick }) {
         hover:scale-110 active:scale-90 active:shadow-none
       "
     >
-      {/* Ev ikonu (SVG): çatı + gövde */}
+      {/* Kapat (X) ikonu */}
       <svg
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="3"
         strokeLinecap="round"
-        strokeLinejoin="round"
         className="h-7 w-7 md:h-8 md:w-8"
       >
-        <path d="M3 11l9-8 9 8" />
-        <path d="M5 10v10h14V10" />
+        <path d="M6 6l12 12" />
+        <path d="M18 6L6 18" />
       </svg>
     </button>
   )

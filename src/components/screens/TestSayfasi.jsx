@@ -45,9 +45,16 @@ function TestSayfasi() {
 
   // ?test=full / ?test=sahneN → ilgili sahne, tam ekran 16:9 (hedef görselle
   // birebir çerçeveleme; konum karşılaştırması için). full = 2. sahne (eski).
-  const sahneEsleme = { full: 1, sahne1: 0, sahne2: 1, sahne3: 2, sahne4: 3 }
-  if (testParam in sahneEsleme) {
-    const sahne = SEVGI_SAHNELERI[sahneEsleme[testParam]]
+  // sahneN dinamik çözülür (N = 1..sahne sayısı) → yeni sayfalar otomatik.
+  const sahneNo = /^sahne(\d+)$/.exec(testParam || '')
+  const sahneIdx =
+    testParam === 'full'
+      ? 1
+      : sahneNo
+        ? Math.min(SEVGI_SAHNELERI.length - 1, Math.max(0, Number(sahneNo[1]) - 1))
+        : null
+  if (sahneIdx !== null) {
+    const sahne = SEVGI_SAHNELERI[sahneIdx]
     return (
       <div className="flex h-full w-full items-center justify-center bg-black">
         <div className="relative overflow-hidden" style={{ width: '100vw', aspectRatio: '16 / 9' }}>

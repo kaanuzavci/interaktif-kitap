@@ -1,9 +1,60 @@
 import { useRef, useState } from 'react'
 import { KITAPLAR } from '../../data/kitaplar.js'
 import KitapKapak from '../ui/KitapKapak.jsx'
+import KapakGovdesi from '../book/KapakGovdesi.jsx'
+import { SAYFA_YUK, SAYFA_GEN } from '../book/kapakOlcu.js'
 import Modal from '../ui/Modal.jsx'
 import Toggle from '../ui/Toggle.jsx'
 import IconButton from '../ui/IconButton.jsx'
+import ortamArkaPlan from '../../assets/backgrounds/genel_arkaplan.jpg'
+
+/* ---------------------------------------------------------------
+   İLETİŞİM — hesap adları TEK YERDE. Değişirse yalnızca burayı güncelle;
+   hem footer modali hem ileride eklenecek başka yerler buradan okur.
+---------------------------------------------------------------- */
+export const ILETISIM = {
+  instagram: 'renklidusleratlasi',
+  eposta: 'renklidusleratlasi@gmail.com',
+}
+
+/* Instagram marka işareti (inline SVG) — emojiden çok daha tanıdık ve her
+   platformda aynı görünür (emoji çizimleri cihaza göre değişir). */
+function InstagramIkon({ className = '' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="2" y="2" width="20" height="20" rx="5.5" />
+      <circle cx="12" cy="12" r="4.2" />
+      <circle cx="17.6" cy="6.4" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+/* Zarf işareti (inline SVG) — Instagram işaretiyle aynı çizgi kalınlığında */
+function EpostaIkon({ className = '' }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="2.5" y="4.5" width="19" height="15" rx="3" />
+      <path d="M3.5 7 12 13 20.5 7" />
+    </svg>
+  )
+}
+
+const ILETISIM_BAGLANTILARI = [
+  {
+    ad: 'Instagram',
+    etiket: `@${ILETISIM.instagram}`,
+    href: `https://www.instagram.com/${ILETISIM.instagram}/`,
+    Ikon: InstagramIkon,
+    dis: true, // yeni sekmede açılır
+  },
+  {
+    ad: 'E-posta',
+    etiket: ILETISIM.eposta,
+    href: `mailto:${ILETISIM.eposta}`,
+    Ikon: EpostaIkon,
+    dis: false, // mailto: posta uygulamasını açar, yeni sekme gerekmez
+  },
+]
 
 /* ---------------------------------------------------------------
    YASAL METİNLER (placeholder) — yayın öncesi gerçekleriyle değişecek.
@@ -27,9 +78,8 @@ const YASAL_METINLER = {
   iletisim: {
     baslik: 'İletişim',
     ikon: '✉️',
-    metin:
-      'Görüş ve önerileriniz için bize ulaşın: iletisim@isililedegerler.com ' +
-      '(Örnek adres — yayın öncesi güncellenecek.)',
+    metin: 'Görüş ve önerileriniz için bize ulaşın — yazmanız bizi çok mutlu eder!',
+    baglantilar: ILETISIM_BAGLANTILARI,
   },
 }
 
@@ -73,7 +123,9 @@ function HomeScreen({
   const [yasalAcik, setYasalAcik] = useState(null)
 
   // Seçim animasyonu durumu:
-  // acilan = { id, transform } (merkeze süzülen kitap), evre = 'merkeze' | 'aciliyor'
+  // acilan = { id, transform } (merkeze süzülen kitap)
+  // evre = 'merkeze' (rafta kalkıp ekran ortasına büyüyerek gelir)
+  //      → 'morph'   (ortadaki kitap BİZİM kapağımıza dönüşür + arka plan belirir)
   const [acilan, setAcilan] = useState(null)
   const [evre, setEvre] = useState(null)
   // Kilitli kitaba dokununca kısa sallanan kitabın id'si
@@ -111,10 +163,12 @@ function HomeScreen({
     setAcilan({ id: kitap.id, transform })
     setEvre('merkeze')
 
-    // 1) ~680ms: kitap ortaya geldi → kapağı aç
-    setTimeout(() => setEvre('aciliyor'), 680)
-    // 2) ~1430ms: kapak açıldı, ışık doldu → okuyucuya geç
-    setTimeout(() => onSelectKitap?.(kitap.id), 1430)
+    // 1) ~720ms: kitap ortaya büyüyerek geldi → BİZİM kapağımıza dönüş (morph)
+    //    başlar: ortadaki kart yumuşakça bizim kapağımıza çözülür + arka plan belirir.
+    setTimeout(() => setEvre('morph'), 720)
+    // 2) ~1450ms: morph tamamlandı → okuyucuya geç (KapakEkrani aynı kapağı
+    //    tam boyutta gösterdiğinden geçiş sıçramasız devam eder).
+    setTimeout(() => onSelectKitap?.(kitap.id), 1450)
   }
 
   return (
@@ -166,19 +220,26 @@ function HomeScreen({
       {/* ============================================================
           İÇERİK (z-20)
       ============================================================ */}
-      <div className="ana-icerik relative z-20 flex h-full w-full flex-col items-center justify-between overflow-y-auto px-4 py-2 md:px-8 md:py-5">
-        {/* ----- BAŞLIK ----- */}
-        <header className="animate-belir-yukari flex shrink-0 flex-col items-center pt-2 md:pt-8">
+      <div className="ana-icerik relative z-20 flex h-full w-full flex-col items-center overflow-y-auto px-4 pb-1 pt-2 md:px-8 md:py-5">
+        {/* ----- FENER PAYI — başlık, fenerin HEMEN altından başlar ----- */}
+        <div
+          className="w-full shrink-0"
+          style={{ height: 'calc(clamp(14px, 6vh, 80px) + clamp(2rem, 8vh, 4.5rem))' }}
+          aria-hidden="true"
+        />
+
+        {/* ----- BAŞLIK — fenerin hemen altında ----- */}
+        <header className="animate-belir-yukari flex shrink-0 flex-col items-center">
           <h1 className="font-baslik text-2xl font-extrabold tracking-tight text-gece drop-shadow-[2px_3px_0_rgba(255,255,255,0.7)] md:text-5xl">
-            Işıl ile Değerler
+            Işıl&apos;ın Değerli Dünyası
           </h1>
           <p className="mt-1 rounded-full bg-seker/90 px-4 py-0.5 font-baslik text-xs font-bold text-white shadow-md md:mt-2 md:px-5 md:py-1 md:text-base">
-            Bir kitap seç, maceraya başla 🌈
+            Bir kitap seç, maceraya başla
           </p>
         </header>
 
-        {/* ----- RAF + KİTAPLAR ----- */}
-        <main className="flex w-full max-w-4xl shrink flex-col items-center">
+        {/* ----- RAF + KİTAPLAR — başlığın hemen altında (yukarı alındı) ----- */}
+        <main className="mt-2 flex w-full max-w-4xl shrink flex-col items-center md:mt-26">
           {/* Kitap kapakları rafın üstünde dik durur */}
           <div className="flex w-full items-end justify-center gap-2 px-2 md:gap-6">
             {KITAPLAR.map((kitap, i) => {
@@ -194,21 +255,29 @@ function HomeScreen({
                   aria-label={aktif ? `${kitap.ad} kitabını aç` : `${kitap.ad} — yakında`}
                   // Fly transform burada (dış düğmede); giriş animasyonu İÇTE
                   // (yoksa pop-yukari animasyonunun transform'u fly'ı ezerdi).
-                  className={`relative w-1/4 max-w-[170px] outline-none transition-transform focus-visible:scale-105 ${
-                    aktif && !aciliyor ? 'cursor-pointer hover:-translate-y-2' : ''
-                  } ${aktif ? '' : 'cursor-not-allowed'}`}
+                  className={`relative w-1/4 outline-none transition-transform focus-visible:scale-105 ${aktif && !aciliyor ? 'cursor-pointer hover:-translate-y-2' : ''
+                    } ${aktif ? '' : 'cursor-not-allowed'}`}
                   style={{
+                    // Kart genişliği yüksekliğe de bağlı (22vh): alçak ekranlarda
+                    // (yatay telefon) raf + footer taşmadan tek ekrana sığar.
+                    maxWidth: 'min(170px, 22vh)',
                     transform: aciliyor ? acilan.transform : undefined,
+                    // morph'ta ortadaki kart yumuşakça solar (altındaki BİZİM
+                    // kapağımız belirirken) → "kapağa dönüştü" hissi.
+                    opacity: aciliyor && evre === 'morph' ? 0 : 1,
+                    transitionProperty: 'transform, opacity',
                     transitionDuration: aciliyor ? '650ms' : '200ms',
                     transitionTimingFunction: 'cubic-bezier(0.22,1,0.36,1)',
                     zIndex: aciliyor ? 50 : undefined,
                   }}
                 >
+                  {/* Pembe kartın KENDİ kapak-açılış animasyonu KALDIRILDI: kitap
+                      açılışı zaten bizim kapağımıza dokununca oluyor (çift açılma
+                      garip duruyordu). Kart yalnızca ortaya gelir, sonra morph'ta solar. */}
                   <div className="animate-pop-yukari" style={{ animationDelay: `${0.15 + i * 0.12}s` }}>
                     <KitapKapak
                       kitap={kitap}
                       aktif={aktif}
-                      aciliyor={aciliyor && evre === 'aciliyor'}
                       sallaniyor={sallananId === kitap.id}
                     />
                   </div>
@@ -231,18 +300,20 @@ function HomeScreen({
             <div className="h-3 w-full rounded-b-md bg-gradient-to-b from-[#90582f] to-[#73441f] shadow-[0_10px_18px_rgba(70,40,15,0.35)] md:h-4" />
             {/* İki küçük destek bağı */}
             <div className="mx-auto flex w-[88%] justify-between">
-              <div className="h-4 w-2 rounded-b-md bg-[#73441f] md:h-6 md:w-3" />
-              <div className="h-4 w-2 rounded-b-md bg-[#73441f] md:h-6 md:w-3" />
+              <div className="h-3 w-2 rounded-b-md bg-[#73441f] md:h-6 md:w-3" />
+              <div className="h-3 w-2 rounded-b-md bg-[#73441f] md:h-6 md:w-3" />
             </div>
           </div>
         </main>
 
         {/* ----- FOOTER ----- */}
         <footer
-          className="animate-belir-yukari flex w-full max-w-4xl shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 rounded-full bg-gece/80 px-4 py-1 text-center font-metin text-[10px] text-white shadow-lg backdrop-blur-sm md:gap-x-4 md:gap-y-1 md:px-5 md:py-1.5 md:text-sm"
+          className="animate-belir-yukari mt-auto flex w-full max-w-4xl shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-0.5 rounded-full bg-gece/80 px-4 py-1 text-center font-metin text-[10px] text-white shadow-lg backdrop-blur-sm md:gap-x-4 md:gap-y-1 md:px-5 md:py-1.5 md:text-sm"
           style={{ animationDelay: '0.5s' }}
         >
-          <span>© 2026 Işıl ile Değerler</span>
+          {/* Marka adı GÖRÜNÜR metinde de geçsin: arama motorları görünür
+              içeriğe, gizli/erişilebilirlik metninden daha çok güvenir. */}
+          <span>© 2026 Renkli Düşler Atlası</span>
           <span className="hidden opacity-40 md:inline">|</span>
           <span className="flex gap-2 md:gap-3">
             <button onClick={() => setYasalAcik('gizlilik')} className="underline-offset-2 transition-colors hover:text-gunes hover:underline">Gizlilik</button>
@@ -254,28 +325,51 @@ function HomeScreen({
         </footer>
       </div>
 
-      {/* Seçim sırasında sahneyi karartıp kitabı öne çıkaran örtü */}
+      {/* MORPH KATMANI — kitap seçilince: ortadaki kart BİZİM kapağımıza dönüşür
+          ve arka plan (okuyucudaki ortam illüstrasyonu) YAVAŞÇA belirir. Kapak
+          gövdesi (KapakGovdesi) ekranda tam boyutta oturur; KapakEkrani'ne geçince
+          aynı kapak sürdüğünden görüntü sıçramaz. Kart bu katmanın ÜSTÜNDE (z-50)
+          solduğundan çapraz geçiş (crossfade) oluşur. */}
       {acilan && (
-        <div
-          className="pointer-events-none absolute inset-0 z-40 transition-colors duration-700"
-          style={{
-            background:
-              evre === 'aciliyor'
-                ? 'radial-gradient(circle at center, rgba(255,246,233,0.85), rgba(90,74,120,0.55))'
-                : 'rgba(90,74,120,0.35)',
-          }}
-        />
+        <div className="pointer-events-none absolute inset-0 z-40">
+          {/* Ortam arka plan — yavaşça yüklenir gibi belirir */}
+          {/* Vinyet/gölge genel_arkaplan görselinin içinde → ekstra karartma yok. */}
+          <img
+            src={ortamArkaPlan}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-[900ms] ease-out"
+            style={{ opacity: evre === 'morph' ? 1 : 0 }}
+          />
+          {/* Bizim kapağımız — ortada, yavaşça belirir (kart buna dönüşür) */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              style={{
+                height: SAYFA_YUK,
+                width: SAYFA_GEN,
+                perspective: '2200px',
+                opacity: evre === 'morph' ? 1 : 0,
+                transform: evre === 'morph' ? 'scale(1)' : 'scale(0.92)',
+                transition: 'opacity 720ms ease, transform 820ms cubic-bezier(0.22,1,0.36,1)',
+              }}
+            >
+              <KapakGovdesi aci={0} />
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* ----- AYARLAR BUTONU (sağ üst) ----- */}
-      <IconButton
-        onClick={() => setAyarlarAcik(true)}
-        label="Ayarlar"
-        renk="bg-gece"
-        className="right-3 top-3 md:right-5 md:top-5"
-      >
-        ⚙️
-      </IconButton>
+      {/* ----- AYARLAR BUTONU (sağ üst) — kitap seçilince (morph) gizlenir ----- */}
+      {!acilan && (
+        <IconButton
+          onClick={() => setAyarlarAcik(true)}
+          label="Ayarlar"
+          renk="bg-gece"
+          className="right-3 top-3 md:right-5 md:top-5"
+        >
+          ⚙️
+        </IconButton>
+      )}
 
       {/* ----- AYARLAR PENCERESİ ----- */}
       <Modal acik={ayarlarAcik} baslik="Ayarlar" ikon="⚙️" onClose={() => setAyarlarAcik(false)}>
@@ -302,6 +396,29 @@ function HomeScreen({
         onClose={() => setYasalAcik(null)}
       >
         <p className="leading-relaxed">{yasalAcik && YASAL_METINLER[yasalAcik].metin}</p>
+
+        {/* İLETİŞİM BAĞLANTILARI — yalnızca "İletişim" sekmesinde. Dokunması
+            kolay olsun diye tam genişlikte, iri, yuvarlak satırlar. */}
+        {yasalAcik && YASAL_METINLER[yasalAcik].baglantilar && (
+          <div className="mt-5 flex flex-col gap-3">
+            {YASAL_METINLER[yasalAcik].baglantilar.map(({ ad, etiket, href, Ikon, dis }) => (
+              <a
+                key={href}
+                href={href}
+                {...(dis ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                className="flex items-center gap-3 rounded-2xl border-2 border-gece/10 bg-white px-4 py-3 shadow-sm transition-transform hover:scale-[1.02] hover:border-seker active:scale-[0.98]"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-seker/15 text-seker">
+                  <Ikon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold uppercase tracking-wide text-gece/50">{ad}</span>
+                  <span className="block truncate font-semibold text-gece">{etiket}</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
       </Modal>
     </div>
   )

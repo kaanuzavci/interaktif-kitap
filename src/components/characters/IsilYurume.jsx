@@ -1,11 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
+import { kitapSaati } from '../../hooks/kitapDuraklat.js'
 
 /* ---------------------------------------------------------------
    FRAME'LERİ OTOMATİK YÜKLEME (import.meta.glob)
    Klasördeki tüm pozları sıralı bir url dizisine çevirir.
 ---------------------------------------------------------------- */
 const frameModulleri = import.meta.glob(
-  '../../assets/characters/isil-yurume/*.png',
+  '../../assets/characters/isil-yurume/*.webp',
   { eager: true, import: 'default' },
 )
 const frames = Object.keys(frameModulleri)
@@ -85,8 +86,10 @@ const IsilYurume = forwardRef(function IsilYurume(
     if (kontrollu || frames.length === 0) return
     let baslangic
 
-    const tik = (now) => {
+    const tik = (rafNow) => {
       rafRef.current = requestAnimationFrame(tik)
+      // Duraklatılabilir sanal zaman (durdur düğmesi kareyi dondurur)
+      const now = kitapSaati(rafNow)
       if (!playingRef.current) {
         baslangic = now
         if (aktifRef.current !== 0) kareGoster(0)

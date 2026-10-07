@@ -1,5 +1,5 @@
 /**
- * SoundToggle: Ses aç/kapat butonu (sol üst köşede sabit durur).
+ * SoundToggle: Ses aç/kapat butonu (sol üstte, DURDUR düğmesinin ALTINDA).
  *
  * Props:
  *  - soundOn  : ses şu an açık mı? (true/false)
@@ -13,11 +13,11 @@ function SoundToggle({ soundOn, onToggle }) {
     <button
       onClick={onToggle}
       aria-label={soundOn ? 'Sesi kapat' : 'Sesi aç'}
-      // Konum güvenli alana (notch/yuvarlak köşe) saygılı: çentiksiz cihazlarda
-      // env(...) = 0 → eski yerinde durur; çentikli telefonda içeri kayar.
+      // Durdur düğmesinin ALTINDA; güvenli alana (notch) saygılı.
+      // 4.5rem = durdur düğmesi yüksekliği + boşluk (dikey dizilim).
       style={{
         left: 'max(0.75rem, env(safe-area-inset-left, 0px))',
-        top: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+        top: 'calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 4.5rem)',
       }}
       className={`
         absolute z-40

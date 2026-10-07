@@ -42,7 +42,9 @@
       "Bash(node cdp5.mjs)",
       "Bash(node cdp_part1.mjs)",
       "Bash(node cdp_kite.mjs)",
-      "Bash(node cdp_s5turn.mjs)"
+      "Bash(node cdp_s5turn.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(export SCRATCH=\"C:/Users/ggbes/AppData/Local/Temp/claude/c--Users-ggbes-OneDrive-Desktop-interaktif-kitap/b9d1edca-c0db-4434-8b25-81f4fb2d44a5/scratchpad\")"
     ],
     "additionalDirectories": [
       "\\tmp",

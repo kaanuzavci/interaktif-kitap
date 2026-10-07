@@ -6,8 +6,8 @@ import KonumluSprite from '../KonumluSprite.jsx'
 import SurukleIpucu from '../SurukleIpucu.jsx'
 
 // Sayfa-4 görselleri
-import pencereGorsel from '../../../assets/backgrounds/sayfa4/pencere.png'
-import ucurtmaGorsel from '../../../assets/backgrounds/sayfa4/ucurtma.png'
+import pencereGorsel from '../../../assets/backgrounds/sayfa4/pencere.webp'
+import ucurtmaGorsel from '../../../assets/backgrounds/sayfa4/ucurtma.webp'
 
 /* ===============================================================
    SEVGİ — 4. SAHNE İÇERİĞİ (kır evi: pencerede Işıl + üzgün çiçek + uçurtma)
@@ -42,13 +42,13 @@ function kareleriTopla(moduller) {
     .map((yol) => moduller[yol])
 }
 const cicekKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/characters/cicek_uzgun/*.png', {
+  import.meta.glob('../../../assets/characters/cicek_uzgun/*.webp', {
     eager: true,
     import: 'default',
   }),
 )
 const isilKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/characters/isil_ucurtma/*.png', {
+  import.meta.glob('../../../assets/characters/isil_ucurtma/*.webp', {
     eager: true,
     import: 'default',
   }),

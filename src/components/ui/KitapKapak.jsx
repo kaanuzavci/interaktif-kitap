@@ -72,6 +72,19 @@ function KitapKapak({ kitap, aktif, aciliyor = false, sallaniyor = false }) {
             filter: aktif ? 'none' : 'grayscale(0.85) brightness(1.05)',
           }}
         >
+          {/* GERÇEK KAPAK GÖRSELİ — kitapta tanımlıysa (ör. Sevgi: kapak.jpg
+              dolu sağ yarısı) düz renk + başlık plakası yerine bu çizilir;
+              okuyucudaki kapakla (KapakGovdesi) birebir aynı görsel. */}
+          {kitap.kapakGorseli && (
+            <img
+              src={kitap.kapakGorseli}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 h-full w-full select-none rounded-l-md rounded-r-lg"
+              style={{ objectFit: 'cover', objectPosition: 'right center' }}
+            />
+          )}
+
           {/* Cilt (spine) — sol kenarda koyu şerit */}
           <div
             className="absolute inset-y-0 left-0 w-[12%] rounded-l-md"
@@ -97,22 +110,25 @@ function KitapKapak({ kitap, aktif, aciliyor = false, sallaniyor = false }) {
             }}
           />
 
-          {/* Başlık plakası — krem, her renkte okunaklı */}
-          <div className="absolute inset-x-[16%] top-1/2 flex -translate-y-1/2 flex-col items-center gap-1 rounded-2xl border-2 border-white/70 bg-krem/95 px-2 py-3 text-center shadow-md">
-            {/* İkon rozeti */}
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-xl shadow md:h-11 md:w-11 md:text-2xl"
-              style={{ background: renk.bg }}
-            >
-              {kitap.ikon}
-            </span>
-            <span className="font-baslik text-base font-extrabold leading-tight text-gece md:text-xl">
-              {kitap.ad}
-            </span>
-            <span className="font-metin text-[10px] font-semibold leading-tight text-gece/55 md:text-xs">
-              {kitap.alt}
-            </span>
-          </div>
+          {/* Başlık plakası — krem, her renkte okunaklı. Gerçek kapak
+              görseli olan kitapta GEREKSİZ (başlık illüstrasyonda basılı). */}
+          {!kitap.kapakGorseli && (
+            <div className="absolute inset-x-[16%] top-1/2 flex -translate-y-1/2 flex-col items-center gap-1 rounded-2xl border-2 border-white/70 bg-krem/95 px-2 py-3 text-center shadow-md">
+              {/* İkon rozeti */}
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-xl shadow md:h-11 md:w-11 md:text-2xl"
+                style={{ background: renk.bg }}
+              >
+                {kitap.ikon}
+              </span>
+              <span className="font-baslik text-base font-extrabold leading-tight text-gece md:text-xl">
+                {kitap.ad}
+              </span>
+              <span className="font-metin text-[10px] font-semibold leading-tight text-gece/55 md:text-xs">
+                {kitap.alt}
+              </span>
+            </div>
+          )}
 
           {/* Aktif: "Başla" etiketi (alt) / Kilitli: "Yakında" rozeti + kilit */}
           {aktif ? (

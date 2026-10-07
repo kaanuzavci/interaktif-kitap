@@ -14,12 +14,18 @@
   --font-metin: "Quicksand", sans-serif;
 
   /* Renk paleti */
-  --color-gunes: #ffd166;      /* sıcak sarı  - güneş, vurgular        */
-  --color-seker: #ff8fab;      /* şeker pembe - kalpler, sevgi teması  */
-  --color-gokyuzu: #bde3ff;    /* açık mavi   - gökyüzü                */
-  --color-cimen: #9bde7e;      /* taze yeşil  - çimen, tepeler         */
-  --color-gece: #5a4a78;       /* yumuşak mor - koyu metin rengi       */
-  --color-krem: #fff6e9;       /* krem        - açık zeminler          */
+  --color-gunes: #ffd166;
+  /* sıcak sarı  - güneş, vurgular        */
+  --color-seker: #ff8fab;
+  /* şeker pembe - kalpler, sevgi teması  */
+  --color-gokyuzu: #bde3ff;
+  /* açık mavi   - gökyüzü                */
+  --color-cimen: #9bde7e;
+  /* taze yeşil  - çimen, tepeler         */
+  --color-gece: #5a4a78;
+  /* yumuşak mor - koyu metin rengi       */
+  --color-krem: #fff6e9;
+  /* krem        - açık zeminler          */
 
   /* Sayfa geçişi (fade) süresi - Book.jsx'teki setTimeout ile aynı olmalı */
   --fade-sure: 400ms;
@@ -28,28 +34,42 @@
   --animate-sallan: sallan 3s ease-in-out infinite;
   --animate-yuzen: yuzen 6s ease-in-out infinite;
   --animate-kalp: kalp 2.5s ease-in-out infinite;
-  --animate-isin: isin 40s linear infinite;          /* güneş ışınları döner   */
-  --animate-kanat: kanat 1.6s ease-in-out infinite;  /* kelebek kanat çırpar   */
-  --animate-parilti: parilti 2.2s ease-in-out infinite; /* yıldız parıldar     */
-  --animate-ziplama: ziplama 1.4s ease-in-out infinite; /* "Başla" pili zıplar */
+  --animate-isin: isin 40s linear infinite;
+  /* güneş ışınları döner   */
+  --animate-kanat: kanat 1.6s ease-in-out infinite;
+  /* kelebek kanat çırpar   */
+  --animate-parilti: parilti 2.2s ease-in-out infinite;
+  /* yıldız parıldar     */
+  --animate-ziplama: ziplama 1.4s ease-in-out infinite;
+  /* "Başla" pili zıplar */
 
   /* Giriş (açılış) animasyonları - bir kez oynar, durduğu yerde kalır (both) */
   --animate-belir-yukari: belirYukari 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-pop: pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
   /* Kitaplık (giriş ekranı) animasyonları */
-  --animate-suzul: suzul 4s ease-in-out infinite;          /* aktif kitap nefes alır/süzülür */
-  --animate-fener-salla: fenerSalla 5s ease-in-out infinite; /* asılı fener nazikçe sallanır */
-  --animate-mote: mote 9s ease-in-out infinite;            /* ışık zerrecikleri süzülür      */
-  --animate-tepki-salla: tepkiSalla 0.5s ease-in-out;      /* kilitli kitaba dokununca       */
-  --animate-pop-yukari: popYukari 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; /* raf belirir */
-  --animate-parla: parla 0.6s ease-out;                    /* dokunmatik öğe parlama tepkisi */
+  --animate-suzul: suzul 4s ease-in-out infinite;
+  /* aktif kitap nefes alır/süzülür */
+  --animate-fener-salla: fenerSalla 5s ease-in-out infinite;
+  /* asılı fener nazikçe sallanır */
+  --animate-mote: mote 9s ease-in-out infinite;
+  /* ışık zerrecikleri süzülür      */
+  --animate-tepki-salla: tepkiSalla 0.5s ease-in-out;
+  /* kilitli kitaba dokununca       */
+  --animate-pop-yukari: popYukari 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  /* raf belirir */
+  --animate-parla: parla 0.6s ease-out;
+  /* dokunmatik öğe parlama tepkisi */
 
   /* "Buraya dokun" ipucu: nabız atan/genişleyen daire (kütük & uğurböceği) */
   --animate-dokun-ping: dokunPing 1.6s ease-out infinite;
 
-  /* "Tutup sürükle" ipucu: el tut → yana kay → bırak → geri dön (Işıl/uçurtma) */
-  --animate-surukle-el: surukleEl 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  /* "Dokun" el ipucu: işaret eden el nesnenin üstüne basıp kalkar (Işıl/uçurtma) */
+  --animate-dokun-el: dokunEl 1.7s ease-in-out infinite;
+
+  /* Sayfa kaydırma ipucu: el sayfanın ortasından çıkıp yatayda kayar */
+  --animate-sayfa-kaydir-sol: sayfaKaydirSol 3s ease-in-out infinite;
+  --animate-sayfa-kaydir-sag: sayfaKaydirSag 3s ease-in-out infinite;
 }
 
 /* ---------------------------------------------------------------
@@ -62,15 +82,19 @@ body,
   width: 100%;
   height: 100%;
   margin: 0;
-  overflow: hidden;          /* kitapta kaydırma çubuğu istemiyoruz */
-  overscroll-behavior: none; /* mobilde aşağı çekince yenileme / kaydırma zinciri yok */
+  overflow: hidden;
+  /* kitapta kaydırma çubuğu istemiyoruz */
+  overscroll-behavior: none;
+  /* mobilde aşağı çekince yenileme / kaydırma zinciri yok */
   font-family: var(--font-metin);
   background: var(--color-krem);
   /* Mobilde dokununca mavi vurgu çıkmasın, metin seçilmesin */
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none; /* uzun basınca iOS bağlam menüsü/önizleme çıkmasın */
+  -webkit-touch-callout: none;
+  /* uzun basınca iOS bağlam menüsü/önizleme çıkmasın */
   user-select: none;
-  touch-action: manipulation; /* çift dokunma zoom'unu kapatır */
+  touch-action: manipulation;
+  /* çift dokunma zoom'unu kapatır */
 }
 
 /* iOS Safari: yatayda adres çubuğu gizlenince yükseklik değişir → dvh/dvw
@@ -86,123 +110,281 @@ img {
 
 /* Karakterlerin yumuşakça aşağı-yukarı sallanması (nefes alma hissi) */
 @keyframes sallan {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50%      { transform: translateY(-12px) rotate(1.5deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(1.5deg);
+  }
 }
 
 /* Bulutların yavaşça sağa-sola süzülmesi */
 @keyframes yuzen {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(28px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(28px);
+  }
 }
 
 /* Kalplerin büyüyüp küçülerek "atması" */
 @keyframes kalp {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50%      { transform: scale(1.25); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
 }
 
 /* Güneş ışınlarının yavaşça dönmesi */
 @keyframes isin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Kelebeğin kanat çırpması (hafif yatay sıkışma + süzülme) */
 @keyframes kanat {
-  0%, 100% { transform: translateY(0) scaleX(1); }
-  50%      { transform: translateY(-6px) scaleX(0.75); }
+
+  0%,
+  100% {
+    transform: translateY(0) scaleX(1);
+  }
+
+  50% {
+    transform: translateY(-6px) scaleX(0.75);
+  }
 }
 
 /* Yıldız/parıltı: belirip kaybolan ışıltı */
 @keyframes parilti {
-  0%, 100% { transform: scale(0.7) rotate(0deg); opacity: 0.35; }
-  50%      { transform: scale(1.1) rotate(20deg); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scale(0.7) rotate(0deg);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: scale(1.1) rotate(20deg);
+    opacity: 1;
+  }
 }
 
 /* "Başla" pilinin yumuşak zıplaması */
 @keyframes ziplama {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
 }
 
 /* Açılışta aşağıdan belirme (başlık, footer) */
 @keyframes belirYukari {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Açılışta "pop" ile büyüyerek belirme (kartlar) */
 @keyframes pop {
-  from { opacity: 0; transform: scale(0.8) translateY(16px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Aktif kitabın yumuşak süzülmesi (nefes alma hissi) */
 @keyframes suzul {
-  0%, 100% { transform: translateY(0) rotate(-0.6deg); }
-  50%      { transform: translateY(-10px) rotate(0.6deg); }
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.6deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(0.6deg);
+  }
 }
 
 /* Asılı fenerin nazik sallanması (üst noktadan döner) */
 @keyframes fenerSalla {
-  0%, 100% { transform: rotate(-2.2deg); }
-  50%      { transform: rotate(2.2deg); }
+
+  0%,
+  100% {
+    transform: rotate(-2.2deg);
+  }
+
+  50% {
+    transform: rotate(2.2deg);
+  }
 }
 
 /* Işık zerrecikleri: yukarı süzülüp belirip kaybolur */
 @keyframes mote {
-  0%   { transform: translateY(0) scale(1);   opacity: 0; }
-  20%  { opacity: 0.9; }
-  80%  { opacity: 0.7; }
-  100% { transform: translateY(-90px) scale(1.3); opacity: 0; }
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 0.9;
+  }
+
+  80% {
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: translateY(-90px) scale(1.3);
+    opacity: 0;
+  }
 }
 
 /* Kilitli kitaba dokununca kısa "çok yakında" sallanması */
 @keyframes tepkiSalla {
-  0%, 100% { transform: rotate(0deg); }
-  25%      { transform: rotate(-5deg); }
-  75%      { transform: rotate(5deg); }
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-5deg);
+  }
+
+  75% {
+    transform: rotate(5deg);
+  }
 }
 
 /* Açılışta aşağıdan zıplayarak belirme (raf + kitaplar) */
 @keyframes popYukari {
-  from { opacity: 0; transform: translateY(40px) scale(0.92); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Dokunmatik öğeye dokununca büyüyüp parlama (tek seferlik) */
 @keyframes parla {
-  0%   { transform: scale(1);    filter: brightness(1); }
-  40%  { transform: scale(1.35); filter: brightness(1.5) drop-shadow(0 0 12px rgba(255,221,150,0.9)); }
-  100% { transform: scale(1);    filter: brightness(1); }
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  40% {
+    transform: scale(1.35);
+    filter: brightness(1.5) drop-shadow(0 0 12px rgba(255, 221, 150, 0.9));
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
 }
 
 /* "Buraya dokun" ipucu: küçük daire büyüyüp solar (radar/nabız hissi) */
 @keyframes dokunPing {
-  0%   { transform: scale(0.45); opacity: 0.85; }
-  70%  { opacity: 0.12; }
-  100% { transform: scale(1.5);  opacity: 0; }
+  0% {
+    transform: scale(0.45);
+    opacity: 0.85;
+  }
+
+  70% {
+    opacity: 0.12;
+  }
+
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
 }
 
 /* "Tutup sürükle" el ipucu: küçük bir hikaye anlatır —
    nesneyi TUT (hafifçe bas/küçül) → yana SÜRÜKLE → BIRAK → başa DÖN.
    translateX yana kayış, scale "tutma" baskısı, rotate doğal el eğimi. */
-@keyframes surukleEl {
-  0%   { transform: translateX(-20%) rotate(-6deg) scale(1); }
-  16%  { transform: translateX(-20%) rotate(-6deg) scale(0.82); } /* TUT (kavra) */
-  52%  { transform: translateX(20%)  rotate(6deg)  scale(0.82); } /* SÜRÜKLE */
-  68%  { transform: translateX(20%)  rotate(6deg)  scale(1); }    /* BIRAK */
-  100% { transform: translateX(-20%) rotate(-6deg) scale(1); }    /* DÖN */
+/* "Dokun" el: işaret eden el nesnenin üstüne iner, kısa basar, kalkar (DÜZ;
+   dönme yok → net okunur). translateY el yüksekliğine oranlıdır. */
+@keyframes dokunEl {
+
+  0%,
+  100% {
+    transform: translateY(-12%) scale(1);
+  }
+
+  38% {
+    transform: translateY(6%) scale(0.93);
+  }
+
+  /* DOKUN (bas) */
+  56% {
+    transform: translateY(6%) scale(0.93);
+  }
+
+  /* kısa basılı */
+  78% {
+    transform: translateY(-12%) scale(1);
+  }
+
+  /* KALK */
 }
 
 /* "İlk dokunuş" parıltısı (Parilti.jsx) — yıldız dışarı uçar ve söner.
    --dx/--dy: uçuş hedefi (cqw), --rot: dönüş. translate(-50%) ile yıldız
    başlangıçta noktanın tam üstündedir, sonra hedefe doğru saçılır. */
 @keyframes pariltiYildiz {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.25) rotate(0deg); }
-  20%  { opacity: 1; }
-  65%  { opacity: 0.95; }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.25) rotate(0deg);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  65% {
+    opacity: 0.95;
+  }
+
   100% {
     opacity: 0;
     transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot));
@@ -211,9 +393,124 @@ img {
 
 /* "İlk dokunuş" parıltısı — ortadaki kısa ışık parlaması */
 @keyframes pariltiFlash {
-  0%   { opacity: 0;    transform: translate(-50%, -50%) scale(0.2); }
-  35%  { opacity: 0.85; }
-  100% { opacity: 0;    transform: translate(-50%, -50%) scale(1.6); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+  }
+
+  35% {
+    opacity: 0.85;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+}
+
+/* Yaprak parıltısı — sayfa12'de çiçeğin yapraklarında sürekli, kademeli
+   yanıp sönen minik yıldızlar (SevgiSahne12). translate(-50%,-50%) merkez
+   ankrajı: yıldız kendi konumunda büyür/döner, kaymaz. */
+@keyframes pariltiTwinkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(45deg);
+  }
+}
+
+/* Bitiş (kutlama) ekranı baloncukları — ekranın sağ/sol kenarından
+   yukarı süzülen sabun köpükleri (BitisEkrani.jsx). Her baloncuk kendi
+   boyut/süre/gecikmesiyle döngüde yükselir; yatay kayış (--b-drift) ve
+   tepe opaklığı (--b-opak) inline stilden CSS değişkeni olarak gelir. */
+@keyframes balonYuksel {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.75);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: var(--b-opak, 0.7);
+  }
+
+  88% {
+    opacity: var(--b-opak, 0.7);
+  }
+
+  100% {
+    transform: translateY(-118vh) translateX(var(--b-drift, 0px)) scale(1.08);
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------
+   SAYFA KAYDIRMA İPUCU (BookReader → SayfaKaydirIpucu)
+   El, sayfanın orta hizasında belirir, yalnızca YATAYDA kayar ve
+   söner; döngü başa sarar. translate(-50%,-50%) merkez ankrajıdır,
+   translateX(±150%) kayma mesafesidir (elin kendi genişliği cinsinden).
+---------------------------------------------------------------- */
+@keyframes sayfaKaydirSol {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateX(0);
+  }
+
+  15% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) translateX(0);
+  }
+
+  60% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) translateX(-150%);
+  }
+
+  78%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateX(-150%);
+  }
+}
+
+@keyframes sayfaKaydirSag {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateX(0);
+  }
+
+  15% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) translateX(0);
+  }
+
+  60% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) translateX(150%);
+  }
+
+  78%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateX(150%);
+  }
+}
+
+/* ---------------------------------------------------------------
+   KİTAP DURAKLAT (okuyucudaki sol üst durdur düğmesi)
+   .kitap-duraklat, BookReader köküne eklenir: içindeki tüm CSS
+   animasyonları OLDUKLARI YERDE donar (animation:none değil —
+   devam edince kaldıkları yerden sürerler). rAF sprite döngüleri
+   ayrıca hooks/kitapDuraklat.js saatiyle durur.
+---------------------------------------------------------------- */
+.kitap-duraklat *,
+.kitap-duraklat *::before,
+.kitap-duraklat *::after {
+  animation-play-state: paused !important;
 }
 
 /* ---------------------------------------------------------------
@@ -234,12 +531,14 @@ img {
    "cihazını çevir" mesajı gösterilir (bkz. App.jsx).
 ---------------------------------------------------------------- */
 .dikey-uyari {
-  display: none; /* yatay modda gizli */
+  display: none;
+  /* yatay modda gizli */
 }
 
 @media (orientation: portrait) {
   .dikey-uyari {
-    display: flex; /* dikey modda görünür */
+    display: flex;
+    /* dikey modda görünür */
   }
 }
 
@@ -249,9 +548,13 @@ img {
    ama estetik bozulmasın diye çubuk gizli.
 ---------------------------------------------------------------- */
 .ana-icerik {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
 }
+
 .ana-icerik::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  display: none;
+  /* Chrome/Safari */
 }

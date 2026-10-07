@@ -3,11 +3,12 @@ import IsilYurume, { ISIL_KARE_SAYISI } from '../../characters/IsilYurume.jsx'
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
 import DokunNoktasi from '../DokunNoktasi.jsx'
 import { useHareketAzalt } from '../../../hooks/useHareketAzalt.js'
+import { kitapSaati } from '../../../hooks/kitapDuraklat.js'
 
 // Ön plan çimeni (tavşan/kütüğün ÖNÜNDE, Işıl'ın ARKASINDA kalır)
-import cimen from '../../../assets/backgrounds/sayfa1/cimen.png'
+import cimen from '../../../assets/backgrounds/sayfa1/cimen.webp'
 // Ön plan çiçekleri (sahnenin EN ÖNÜ; tam 16:9 tuvale gömülü, çiçekler altta)
-import cicekler from '../../../assets/backgrounds/sayfa1/cicekler.png'
+import cicekler from '../../../assets/backgrounds/sayfa1/cicekler.webp'
 
 /* ===============================================================
    SEVGİ — 1. SAHNE İÇERİĞİ (katmanlar + etkileşim)
@@ -38,13 +39,13 @@ function kareleriTopla(moduller) {
     .map((yol) => moduller[yol])
 }
 const tavsanKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/characters/tavsan-zipla/*.png', {
+  import.meta.glob('../../../assets/characters/tavsan-zipla/*.webp', {
     eager: true,
     import: 'default',
   }),
 )
 const ugurKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/characters/ugurbocegi-zipla/*.png', {
+  import.meta.glob('../../../assets/characters/ugurbocegi-zipla/*.webp', {
     eager: true,
     import: 'default',
   }),
@@ -283,8 +284,10 @@ function IsilGezinti({ canli, yuruyor, frameSuresiMs, yuruSureMs }) {
     let rafId
     let baslangic
 
-    const tik = (now) => {
+    const tik = (rafNow) => {
       rafId = requestAnimationFrame(tik)
+      // Duraklatılabilir sanal zaman: durdur düğmesi yürüyüşü dondurur
+      const now = kitapSaati(rafNow)
       const sarma = sarmaRef.current
       if (!yurumeliRef.current) {
         baslangic = undefined

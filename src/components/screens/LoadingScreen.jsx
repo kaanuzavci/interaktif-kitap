@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import IsilYurume from '../characters/IsilYurume.jsx'
 import arkaPlan from '../../assets/backgrounds/sayfa1/arka_plan.jpg'
-import cimen from '../../assets/backgrounds/sayfa1/cimen.png'
+import cimen from '../../assets/backgrounds/sayfa1/cimen.webp'
+// Ortam (kitap dışı) arka planı — kapak/okuyucu açılır açılmaz göründüğü
+// için o da kritik ön yükleme listesindedir.
+import genelArkaPlan from '../../assets/backgrounds/genel_arkaplan.jpg'
 
 /* ===============================================================
    YÜKLEME EKRANI
@@ -22,14 +25,14 @@ import cimen from '../../assets/backgrounds/sayfa1/cimen.png'
 
 // Sahnelere gömülü Işıl yürüme kareleri (IsilYurume da kullanıyor)
 const kareModulleri = import.meta.glob(
-  '../../assets/characters/isil-yurume/*.png',
+  '../../assets/characters/isil-yurume/*.webp',
   { eager: true, import: 'default' },
 )
 
 // Önyüklenecek kritik görsellerin url listesi:
 // giriş ekranı saf CSS olduğu için ağır görsel yok; kritik olan ilk
 // bölümün taban arka planı + ön çimen + Işıl'ın tüm kareleridir.
-const KRITIK_GORSELLER = [arkaPlan, cimen, ...Object.values(kareModulleri)]
+const KRITIK_GORSELLER = [genelArkaPlan, arkaPlan, cimen, ...Object.values(kareModulleri)]
 
 // Çok hızlı yüklemelerde ekran "çakıp" geçmesin diye minimum süre (ms)
 const MIN_SURE = 1500
@@ -107,7 +110,7 @@ function LoadingScreen({ onReady, hareketAzalt = false }) {
 
         {/* Çocuk dostu ifade */}
         <p className="font-baslik text-2xl font-extrabold text-gece drop-shadow-[1px_2px_0_rgba(255,255,255,0.8)] md:text-3xl">
-          Işıl hazırlanıyor… 🌸
+          Işıl ile maceralar yükleniyor…
         </p>
 
         {/* Yuvarlak, dolan ilerleme çubuğu (gerçek yüzdeye bağlı) */}

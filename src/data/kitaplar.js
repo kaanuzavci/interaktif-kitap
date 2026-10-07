@@ -16,6 +16,9 @@
 =============================================================== */
 
 import { SEVGI_SAHNELERI } from './sevgiSahneleri.js'
+// Sevgi kitabının GERÇEK kapak illüstrasyonu (dolu sağ yarı kullanılır) —
+// rafta da okuyucudaki kapakla aynı görsel görünür.
+import sevgiKapak from '../assets/backgrounds/kapak/kapak.jpg'
 
 export const KITAPLAR = [
   {
@@ -25,6 +28,9 @@ export const KITAPLAR = [
     ikon: '💝',
     renk: 'seker',
     durum: 'aktif',
+    // Varsa raftaki kapak bu görselle çizilir (KitapKapak); yoksa renkli
+    // otomatik kapak üretilir (kilitli kitaplarda olduğu gibi).
+    kapakGorseli: sevgiKapak,
     sahneler: SEVGI_SAHNELERI,
   },
   {

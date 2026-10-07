@@ -15,7 +15,7 @@ import KareAnimasyon from './KareAnimasyon.jsx'
 
 // Göz kırpma temposu (ms): [açık uzun, kapalı kısa] → ~3 sn'de bir kırpar
 const KIRPMA = [2600, 200]
-const moduller = import.meta.glob('../../assets/characters/cicek_animasyon/*.png', {
+const moduller = import.meta.glob('../../assets/characters/cicek_animasyon/*.webp', {
   eager: true,
   import: 'default',
 })

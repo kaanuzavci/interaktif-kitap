@@ -19,7 +19,7 @@ import KareAnimasyon from './KareAnimasyon.jsx'
 
 // Duruş temposu (ms): [dik tutuş, öne uzatma] — sakin, yavaş alternasyon
 const DURUS = [2000, 1500]
-const moduller = import.meta.glob('../../assets/characters/isil_cicegi_birak/*.png', {
+const moduller = import.meta.glob('../../assets/characters/isil_cicegi_birak/*.webp', {
   eager: true,
   import: 'default',
 })

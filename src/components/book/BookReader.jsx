@@ -3,8 +3,24 @@ import { kitapBul } from '../../data/kitaplar.js'
 import Sahne from './Sahne.jsx'
 import { TiklamaKayitContext } from './tiklamaKayit.js'
 import useSayfaSesi from '../../hooks/useSayfaSesi.js'
+import useSahneSesi from '../../hooks/useSahneSesi.js'
+import useFonMuzigi from '../../hooks/useFonMuzigi.js'
+import { kitapDuraklatAyarla, useKitapDuraklat } from '../../hooks/kitapDuraklat.js'
+import { kitapBitisAyarla, useKitapBitis } from '../../hooks/kitapBitis.js'
+import { OgreticiContext } from './ogreticiContext.js'
+import DuraklatButonu from '../ui/DuraklatButonu.jsx'
 import SoundToggle from '../ui/SoundToggle.jsx'
+import TekrarButonu from '../ui/TekrarButonu.jsx'
 import HomeButton from '../ui/HomeButton.jsx'
+import BilgiButonu from '../ui/BilgiButonu.jsx'
+import KapakEkrani from './KapakEkrani.jsx'
+import BitisEkrani from './BitisEkrani.jsx'
+import OgreticiKatmani from './OgreticiKatmani.jsx'
+
+// Okuma ekranının ORTAM arka planı: kitabın dışında kalan alan tüm
+// sayfalarda genel arka planı (gölgeli hazırlanmış illüstrasyon) gösterir.
+// Gölge/vinyet görselin İÇİNDE geldiği için üstüne CSS karartma binmez.
+import ortamArkaPlan from '../../assets/backgrounds/genel_arkaplan.jpg'
 
 /* ===============================================================
    KİTAP OKUYUCU (BookReader) — projenin kalbi
@@ -41,7 +57,7 @@ function baslangicSahne(toplam) {
   return Number.isFinite(n) && n >= 1 ? Math.min(toplam - 1, Math.floor(n) - 1) : 0
 }
 
-function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = false }) {
+function BookReader({ kitapId, soundOn, onToggleSound, muzik = true, onHome, hareketAzalt = false }) {
   const kitap = kitapBul(kitapId)
   const sahneler = kitap?.sahneler || []
 
@@ -50,9 +66,75 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
   // flip: { yon:'ileri'|'geri', aci:0..180, suruyor, gecisli } | null
   const [flip, setFlip] = useState(null)
 
+  // KAPAK: kitap açılınca önce kapak (büyümüş) gösterilir; dokununca okuyucu
+  // sayfa0'dan başlar. Dev kısayolu ?sahne=N ile bir sayfaya atlanınca atlanır.
+  const [kapakAcik, setKapakAcik] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return !new URLSearchParams(window.location.search).has('sahne')
+  })
+
+  // Okuyucunun YUMUŞAK gelişi: kapak açılıp okuyucu göründüğünde kitap
+  // hafif büyüyüp belirir (bir anda "pat" diye gelmez → kapak açılışıyla
+  // devam eden doğal geçiş). Kapaksız (?sahne) girişte de aynı yumuşak giriş.
+  const [readerGirdi, setReaderGirdi] = useState(false)
+  useEffect(() => {
+    if (kapakAcik) return
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => setReaderGirdi(true)))
+    return () => cancelAnimationFrame(r)
+  }, [kapakAcik])
+
   const spreadRef = useRef(null) // 16:9 alanı ölçmek için
   const dragRef = useRef(null) // aktif sürükleme bilgisi
   const calSayfaSesi = useSayfaSesi()
+
+  // DURDUR/DEVAM — sol üstteki düğme. Duraklatınca sayfadaki animasyonlar
+  // (CSS + sprite döngüleri) ve ileride sesli okuma durur/devam eder.
+  const duraklatildi = useKitapDuraklat()
+  const duraklatToggle = () => kitapDuraklatAyarla(!duraklatildi)
+  // SAYFA ANLATIM SESİ — sahne değişince o sayfanın seslendirmesi çalar;
+  // DURDUR düğmesi (duraklatildi) anlatımı da duraklatır/devam ettirir.
+  // tekrarCal: TEKRAR düğmesi bulunulan sayfanın anlatımını baştan çalar.
+  // onBitti: SON SAYFANIN anlatımı (konuşma) bitince kutlama ekranı gelir
+  // (eskiden çiçeğe dokunuş + 15 sn sayaçtı; artık sese bağlı → geç kalmaz).
+  const { tekrarCal } = useSahneSesi(sahneIndex, duraklatildi, () => {
+    if (sahneIndex === sahneler.length - 1) kitapBitisAyarla(true)
+  })
+  // FON MÜZİĞİ — kitap boyunca anlatımın arkasında düşük sesle döngü.
+  // muzik anahtarı kapalıysa hiç çalmaz; DURDUR düğmesi müziği de duraklatır.
+  useFonMuzigi(muzik, duraklatildi)
+  // Kitaba her girişte ve çıkışta temiz başla (duraklatılmış/bitmiş kalmasın).
+  useEffect(() => {
+    kitapDuraklatAyarla(false)
+    kitapBitisAyarla(false)
+    return () => {
+      kitapDuraklatAyarla(false)
+      kitapBitisAyarla(false)
+    }
+  }, [])
+
+  // SON SAYFA BİTİŞ EKRANI — son sayfanın anlatımı bitince (yukarıdaki
+  // onBitti → kitapBitis sinyali) tam-ekran kutlama gösterilir.
+  const bitti = useKitapBitis()
+
+  // SAYFA0 ÖĞRETİCİ — kitaba her girişte ilk sayfada 3 düğmeyi (durdur/ses/
+  // tekrar) sırayla tanıtan zorunlu katman; bitince sayfa0'ın kendi
+  // koreografisi (SevgiSahne0 içinde) başlar. Değer OgreticiContext ile
+  // sayfa0'a AKAR (render-senkron → koreografi öğretici bitene dek başlamaz).
+  // Sadece sayfa0'dan (index 0) temiz girişte gösterilir; ?p0faz dev
+  // kısayolunda atlanır.
+  const [ogreticiAktif, setOgreticiAktif] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const q = new URLSearchParams(window.location.search)
+    if (q.has('p0faz')) return false
+    return baslangicSahne(sahneler.length) === 0
+  })
+  const ogreticiBitti = () => setOgreticiAktif(false)
+
+  // BİLGİ DÜĞMESİ — sağ üstte X'in altındaki (i): basılınca aynı öğretici
+  // katman, bulunulan sayfa fark etmeksizin yeniden açılır (3 düğmeyi
+  // sırayla gösterip açıklar). Girişteki zorunlu öğreticiden bağımsızdır;
+  // OgreticiContext'e AKMAZ → sayfa0 koreografisi bundan etkilenmez.
+  const [bilgiAcik, setBilgiAcik] = useState(false)
 
   // KOMŞU SAHNE PRELOAD — lazy() ile yüklenen sahne bileşenlerinin
   // çevirme sırasında hazır olmasını sağlar. Aktif sahneden ±1 komşu
@@ -109,6 +191,16 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
   const tamamla = (yon) => {
     setSahneIndex((i) => (yon === 'ileri' ? i + 1 : i - 1))
     setFlip(null)
+  }
+
+  // --- BİTİŞ EKRANI BUTONU ---
+  // "Kitaba Dön": kutlamayı kapat, kitabı başa sar ve KAPAĞA dön
+  // (kapaktan tekrar açılınca sayfa0'dan yeni bir okuma başlar).
+  const bitisKitabaDon = () => {
+    kitapBitisAyarla(false)
+    setSahneIndex(0)
+    setReaderGirdi(false) // kapaktan tekrar açılınca yumuşak giriş yeniden oynasın
+    setKapakAcik(true)
   }
 
   // --- PROGRAMATİK ÇEVİRME (klavye / dokunma / reduced-motion) ---
@@ -218,12 +310,23 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
 
   if (!kitap) return null
 
+  // Kapak açılış ekranı — okuyucudan önce, ayrı katman (üst UI/sayaç yok).
+  if (kapakAcik) return <KapakEkrani onAc={() => setKapakAcik(false)} />
+
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      {/* ===== ORTAM / MASA (sıcak okuma köşesi — girişle uyumlu) ===== */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#f3ddc4] via-[#ecd2bd] to-[#d9b89a]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,rgba(255,240,210,0.6),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_58%,rgba(70,45,25,0.30))]" />
+    // OgreticiContext: sayfa0'a "öğretici aktif mi" bilgisini render-senkron akıtır.
+    <OgreticiContext.Provider value={ogreticiAktif}>
+    {/* .kitap-duraklat: durdur düğmesi basılıyken TÜM CSS animasyonlarını
+        oldukları yerde dondurur (index.css); sprite döngüleri kitapSaati durdurur. */}
+    <div className={`relative h-full w-full overflow-hidden ${duraklatildi ? 'kitap-duraklat' : ''}`}>
+      {/* ===== ORTAM: kitabın dışında genel arka plan (tüm sayfalarda) =====
+          Vinyet/gölge görsele gömülü → ekstra karartma katmanı yok. */}
+      <img
+        src={ortamArkaPlan}
+        alt=""
+        draggable={false}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
 
       {/* ===== KİTABIN ORTALANDIĞI ALAN ===== */}
       <div className="absolute inset-0 flex items-center justify-center p-2">
@@ -245,6 +348,11 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
               '0 4px 12px rgba(0,0,0,0.3), ' +
               'inset 0 2px 2px rgba(255,255,255,0.16), ' +
               'inset 0 -1px 0 rgba(0,0,0,0.2)',
+            // Kapak açılışından devam eden yumuşak giriş (hareketsizde .hareketsiz
+            // geçişi kapatır → anında görünür).
+            opacity: readerGirdi ? 1 : 0,
+            transform: readerGirdi ? 'scale(1)' : 'scale(0.965)',
+            transition: 'opacity 460ms ease, transform 520ms cubic-bezier(0.22,1,0.36,1)',
           }}
         >
           {/* SAYFA ALANI — tam 16:9 (koordinat hizası bozulmaz)
@@ -334,9 +442,13 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
         </div>
       </div>
 
-      {/* ===== SABİT ÜST UI ===== */}
+      {/* ===== SABİT ÜST UI =====
+          Sol üst: durdur/devam + ses; sağ üst: kapat (X, ana menü). */}
+      <DuraklatButonu duraklatildi={duraklatildi} onToggle={duraklatToggle} />
       <SoundToggle soundOn={soundOn} onToggle={onToggleSound} />
+      <TekrarButonu onClick={tekrarCal} />
       <HomeButton onClick={onHome} />
+      <BilgiButonu onClick={() => setBilgiAcik(true)} />
 
       {/* ===== SAYFA GÖSTERGESİ (sade, köşede; güvenli alana saygılı) ===== */}
       <div
@@ -345,7 +457,25 @@ function BookReader({ kitapId, soundOn, onToggleSound, onHome, hareketAzalt = fa
       >
         {sahneIndex + 1} / {sahneler.length}
       </div>
+
+      {/* ===== BİTİŞ (KUTLAMA) EKRANI — son sayfada, anlatım bitince ===== */}
+      {bitti && sahneIndex === sonSahne && (
+        <BitisEkrani onKitabaDon={bitisKitabaDon} />
+      )}
+
+      {/* ===== ÖĞRETİCİ — kitaba her girişte sayfa0'da zorunlu; ayrıca sağ
+          üstteki bilgi (i) düğmesiyle HER sayfadan yeniden açılabilir ===== */}
+      {(bilgiAcik || (ogreticiAktif && sahneIndex === 0)) && (
+        <OgreticiKatmani
+          onBitti={() => {
+            setBilgiAcik(false)
+            if (ogreticiAktif) ogreticiBitti()
+          }}
+          onKapat={onHome}
+        />
+      )}
     </div>
+    </OgreticiContext.Provider>
   )
 }
 

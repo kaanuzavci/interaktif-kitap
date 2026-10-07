@@ -67,7 +67,29 @@ function Sahne({ sahne, canli = true }) {
         </Suspense>
       )}
 
-      {/* ===== ANLATI METNİ ===== */}
+      {/* ===== SAYFA METNİ (GÖRSEL) =====
+          Yazının KONUMU görselin içinde hazır: tam 16:9 şeffaf PNG,
+          arka planla birebir aynı ölçekte. Arka planın ve tüm öğelerin
+          ÜSTÜNE, en üst katmana biner ki her zaman okunaklı kalsın;
+          pointer-events yok → altındaki sprite'lara dokunuş geçer.
+          Sahne 16:9, görsel de 16:9 olduğundan arka planla aynı
+          (h-full w-full) yerleşim tam hizalanır; kitap iki yarıya
+          bölününce metin de doğru bölünür. */}
+      {sahne.metinGorseli && (
+        <img
+          src={sahne.metinGorseli}
+          alt=""
+          draggable={false}
+          className="pointer-events-none absolute inset-0 z-40 h-full w-full select-none"
+          // metinKaydir: metni DİKEYDE oynatır (sahne yüksekliğinin %'si).
+          // Negatif = yukarı, pozitif = aşağı. Görsele hiç dokunmadan
+          // sevgiSahneleri.js'ten ayarlanır (ör. gökyüzü sayfasında metin
+          // güneşle çakışmasın diye biraz yukarı alınır).
+          style={sahne.metinKaydir ? { transform: `translateY(${sahne.metinKaydir})` } : undefined}
+        />
+      )}
+
+      {/* ===== ANLATI METNİ (metin tabanlı — şu an kullanılmıyor) ===== */}
       {sahne.metin && (
         <SahneMetni baslik={sahne.baslik} metin={sahne.metin} konum={sahne.metinKonum} />
       )}

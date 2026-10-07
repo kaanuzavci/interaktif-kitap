@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { TiklamaKayitContext } from './tiklamaKayit.js'
 import { opakMerkez, noktaDolu } from './alfaHarita.js'
+import { kitapSaati } from '../../hooks/kitapDuraklat.js'
 import DokunIpucu from './DokunIpucu.jsx'
 import Parilti, { PARILTI_SURE_MS } from './Parilti.jsx'
 
@@ -49,6 +50,7 @@ function TiklamaliSprite({
   ilkDokunusKaresi = 0, // ilk dokunuşta bu kareden başla (indeks); sonraki turlar normal
   ipucuYuzde = null, // {x,y} sahne %'si — verilirse "dokun" ipucu opak merkez
   // yerine TAM bu noktada durur (ör. uzun saplı saksılı çiçekte yüzün üstü)
+  onOynat = null, // İLK dokunuşta bir kez çağrılır (ör. son sayfa bitiş sayacı)
 }) {
   const imgRef = useRef(null)
   const imgObjRef = useRef([]) // alfa testi için Image nesneleri
@@ -84,8 +86,12 @@ function TiklamaliSprite({
     return { seg, total: t }
   }, [frames.length, frameSuresiMs, bekleKare, beklemeSuresiMs, donguArasiMs])
 
-  // Kareleri önbelleğe al + alfa testi için Image nesneleri + ipucu merkezi
+  // Kareleri önbelleğe al + alfa testi için Image nesneleri + ipucu merkezi.
+  // YALNIZCA canli iken: canli=false kopyalar (sayfa-çevirme önizlemesi) hiç
+  // animasyon oynatmaz/hit-test edilmez → kareleri decode etmek israftır; bu
+  // koruma çevirme anındaki tekrarlı decode patlamasını (mobil çökme) önler.
   useEffect(() => {
+    if (!canli) return
     imgObjRef.current = frames.map((url) => {
       const im = new Image()
       im.src = url
@@ -98,7 +104,7 @@ function TiklamaliSprite({
     }
     if (im0 && im0.complete && im0.naturalWidth) merkeziHesapla()
     else if (im0) im0.onload = merkeziHesapla
-  }, [frames])
+  }, [frames, canli])
 
   // Başlangıçta dinlenme karesi + unmount temizliği
   useEffect(() => {
@@ -121,7 +127,8 @@ function TiklamaliSprite({
       rafRef.current = 0
       return
     }
-    const gecen = (zaman - baslangicRef.current) % dongu.total
+    // kitapSaati: durdur düğmesine basılınca zaman donar → kare donar
+    const gecen = (kitapSaati(zaman) - baslangicRef.current) % dongu.total
     let f = frames.length - 1
     for (let k = 0; k < dongu.seg.length; k++) {
       if (gecen < dongu.seg[k].until) {
@@ -139,13 +146,16 @@ function TiklamaliSprite({
     if (oynatRef.current) return
     oynatRef.current = true
     setOynadi(true)
+    // İLK dokunuş bildirimi — yalnızca bir kez (oynatRef koruması yukarıda).
+    // Son sayfada bu, 15 sn'lik bitiş sayacını başlatır (SevgiSahne12).
+    onOynat?.()
     // İlk dokunuş parıltısı (yıldızlar) — öğe "parıltıyla gelmiş" gibi olur
     setParilti(true)
     setTimeout(() => setParilti(false), PARILTI_SURE_MS)
     // İlk dokunuşta istenen kareden başla: zaman çizelgesini o karenin
     // başlangıç anına ofsetleyerek ilk gösterilen kare ilkDokunusKaresi olur.
     // Sonraki turlar modulo döngü ile normal (kare 0'dan) oynar.
-    const simdi = performance.now()
+    const simdi = kitapSaati(performance.now())
     if (ilkDokunusKaresi > 0 && dongu.seg.length > ilkDokunusKaresi) {
       // İlk N karenin toplam süresini hesapla → zamanı o kadar geri al
       const ofset = ilkDokunusKaresi > 0 ? dongu.seg[ilkDokunusKaresi - 1].until : 0

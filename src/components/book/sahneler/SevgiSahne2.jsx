@@ -1,6 +1,6 @@
 import TiklamaliSprite from '../TiklamaliSprite.jsx'
 import TiklanirGorsel from '../TiklanirGorsel.jsx'
-import kalemler from '../../../assets/backgrounds/sayfa2/kalemler.png'
+import kalemler from '../../../assets/backgrounds/sayfa2/kalemler.webp'
 
 /* ===============================================================
    SEVGİ — 2. SAHNE İÇERİĞİ (oda: Işıl çiçeği uzatıyor + Canım)
@@ -41,13 +41,13 @@ function kareleriTopla(moduller) {
     .map((yol) => moduller[yol])
 }
 const cicekKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/characters/cicek_animasyon/*.png', {
+  import.meta.glob('../../../assets/characters/cicek_animasyon/*.webp', {
     eager: true,
     import: 'default',
   }),
 )
 const isilKareleri = kareleriTopla(
-  import.meta.glob('../../../assets/characters/isil_cicegi_birak/*.png', {
+  import.meta.glob('../../../assets/characters/isil_cicegi_birak/*.webp', {
     eager: true,
     import: 'default',
   }),

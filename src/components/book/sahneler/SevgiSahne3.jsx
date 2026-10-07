@@ -2,13 +2,14 @@ import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { TiklamaKayitContext } from '../tiklamaKayit.js'
 import { opakMerkez, noktaDolu } from '../alfaHarita.js'
 import { useHareketAzalt } from '../../../hooks/useHareketAzalt.js'
+import { kitapSaati } from '../../../hooks/kitapDuraklat.js'
 import TiklanirGorsel from '../TiklanirGorsel.jsx'
 import DokunNoktasi from '../DokunNoktasi.jsx'
 import SurukleIpucu from '../SurukleIpucu.jsx'
 
 // Sayfa-3 görselleri (hepsi tam 16:9 tuvale gömülü)
-import isilGorsel from '../../../assets/backgrounds/sayfa3/isil.png'
-import kekRafi from '../../../assets/backgrounds/sayfa3/kek_rafi.png'
+import isilGorsel from '../../../assets/backgrounds/sayfa3/isil.webp'
+import kekRafi from '../../../assets/backgrounds/sayfa3/kek_rafi.webp'
 
 /* ===============================================================
    SEVGİ — 3. SAHNE İÇERİĞİ (mutfak: Işıl'ı keke götür)
@@ -41,14 +42,14 @@ import kekRafi from '../../../assets/backgrounds/sayfa3/kek_rafi.png'
    25 PNG decode edilmez; URL'ler yalnızca DumanEfekti mount olunca lazy
    resolve edilir (Aşama 1+2: ~200 MB GPU bellek tasarrufu). */
 const dumanGlobYollari = Object.keys(
-  import.meta.glob('../../../assets/animations/duman_animasyon/*.png'),
+  import.meta.glob('../../../assets/animations/duman_animasyon/*.webp'),
 ).sort()
 // Lazy resolve: URL'leri ilk ihtiyaçta yükle ve önbelleğe al
 let _dumanUrlOnbellek = null
 async function dumanUrlleriniYukle() {
   if (_dumanUrlOnbellek) return _dumanUrlOnbellek
   const moduller = import.meta.glob(
-    '../../../assets/animations/duman_animasyon/*.png',
+    '../../../assets/animations/duman_animasyon/*.webp',
     { eager: true, import: 'default' },
   )
   _dumanUrlOnbellek = dumanGlobYollari.map((yol) => moduller[yol])
@@ -257,8 +258,10 @@ function DumanEfekti({ yukleyici, kareSayisi = 0, oynat, duraklat = false, gizle
     if (kareSayisi === 0) return
     let raf = 0
     let sonZaman
-    const tik = (now) => {
+    const tik = (rafNow) => {
       raf = requestAnimationFrame(tik)
+      // Duraklatılabilir sanal zaman: durdur düğmesi dumanı dondurur
+      const now = kitapSaati(rafNow)
       if (!oynatRef.current || azaltRef.current) {
         gecenRef.current = 0
         sonZaman = undefined

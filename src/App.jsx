@@ -102,6 +102,7 @@ function App() {
           kitapId={aktifKitapId}
           soundOn={soundOn}
           onToggleSound={toggleSound}
+          muzik={muzik}
           onHome={kitapligaDon}
           hareketAzalt={hareketAzalt}
         />
